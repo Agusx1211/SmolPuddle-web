@@ -1,5 +1,6 @@
 
 import { Store } from "."
+import { isOrder, Order } from "../types/order"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
 
