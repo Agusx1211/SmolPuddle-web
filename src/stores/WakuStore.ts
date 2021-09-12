@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { getBootstrapNodes, Waku, WakuMessage } from 'js-waku'
+import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
 
 import { Store } from './'
 
@@ -61,7 +61,7 @@ export class WakuStore {
     if (this.waku === undefined) {
       // Start waku
       const waku = await Waku.create()
-      const bootNodes = await getBootstrapNodes()
+      const bootNodes = await getStatusFleetNodes()
       await Promise.all(bootNodes.map(async (n: string) => {
         try {
           console.log("connect to", n)
@@ -184,7 +184,8 @@ export class WakuStore {
     this.waku.relay.addObserver(callback, [topic])
 
     try {
-      await this.waku.store.queryHistory([topic], {
+      await this.waku.store.queryHistory({
+        contentTopics: [topic],
         callback: (msgs: WakuMessage[]) => {
           this.messages.push(...msgs)
           this.callCallbacks(this.callbacks, ...msgs)
