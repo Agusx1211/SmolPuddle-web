@@ -1,6 +1,7 @@
 import { Button, Card, CardActionArea, CardActions, CardContent, CardMedia, makeStyles, Typography } from "@material-ui/core"
 import { ethers } from "ethers"
 import { useEffect } from "react"
+import { useHistory } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CreateOrderStore } from "../stores/CreateOrderStore"
 import { NftStore } from "../stores/NftStore"
@@ -20,6 +21,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
 
   const { collection, id } = props
 
+  const history = useHistory()
   const nftStore = useStore(NftStore)
   const createOrderStore = useStore(CreateOrderStore)
   const itemMetata = useObservable(nftStore.metadataOfItem(collection, id))
@@ -49,7 +51,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
       <Button size="small" color="primary" onClick={() => createOrderStore.openCreateOrder({ collection, id })}>
         Sell
       </Button>
-      <Button size="small" color="primary">
+      <Button size="small" color="primary" onClick={() => history.push(`/${collection}/${id.toString()}`)}>
         View
       </Button>
     </CardActions>

@@ -40,7 +40,7 @@ function App() {
         <HashRouter>
           <Header />
           <Route
-            path={["/:collection", "/:collection/:id"]}
+            path={["/:collection/:id", "/:collection"]}
             strict={true}
           >
             <CollectionSubview />

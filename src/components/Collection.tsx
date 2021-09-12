@@ -4,7 +4,7 @@ import { useParams } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CollectionsStore } from "../stores/CollectionsStore"
 import { NftStore } from "../stores/NftStore"
-import { ItemCard } from "./ItemCards"
+import { ItemCard } from "./ItemCard"
 
 export function Collection() {
   const { collection } = useParams<{ collection: string }>()
