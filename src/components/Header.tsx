@@ -10,6 +10,7 @@ import ArrowBackIcon from '@material-ui/icons/ArrowBack'
 import { useObservable, useStore } from '../stores'
 import { Web3Store } from '../stores/Web3Store'
 import { shortAddress } from '../types/address'
+import Smol from '../smol.png'
 
 const useStyles = makeStyles((theme) => ({
   head: {
@@ -68,18 +69,16 @@ export function Header() {
   return (
     <div className={classes.head}>
       <Container className={classes.container}>
-        <Grid container spacing={1} justify="center">
+        <Grid container spacing={2} justifyContent="center">
           <Grid item>
-            {/* <img src={Magpie} height={140}></img> */}
-          </Grid>
-          <Grid item>
-            <Typography className={classes.title} component="h1" variant="h2" align="center" color="textPrimary" gutterBottom>
+            <img src={Smol} height={100}></img>
+            <Typography className={classes.title} variant="h2" align="center" color="textPrimary" gutterBottom>
               Smol Puddle
             </Typography>
           </Grid>
         </Grid>
         <div className={classes.headButtons}>
-          <Grid container spacing={2} justify="center">
+          <Grid container spacing={2} justifyContent="center">
             <Grid item>
               { !isMain &&
                 <Button onClick={() => history.push('/') } >
@@ -88,17 +87,17 @@ export function Header() {
               }
             </Grid>
             <Grid item>
-              <Button onClick={() => history.push('/listings') } variant="contained" color="primary">
+              <Button onClick={() => history.push('/') } variant="outlined" color="primary">
                 Listings
               </Button>
             </Grid>
             <Grid item>
-              <Button onClick={() => history.push('/sell') } variant="contained" color="primary">
-                Create order
+              <Button onClick={() => history.push('/sell') } variant="outlined" color="primary">
+                Sell
               </Button>
             </Grid>
             <Grid item>
-             <Button onClick={() => web3store.connect() } variant="contained" color="primary">
+             <Button onClick={() => web3store.connect() } variant="outlined" color="primary">
                 { account ? `Disconnect ${shortAddress(account)}` : 'Connect'}
               </Button>
             </Grid>

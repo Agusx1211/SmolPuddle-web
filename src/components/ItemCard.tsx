@@ -5,16 +5,28 @@ import { useHistory } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CreateOrderStore } from "../stores/CreateOrderStore"
 import { NftStore } from "../stores/NftStore"
+import { OrderbookStore } from "../stores/OrderbookStore"
+import { Web3Store } from "../stores/Web3Store"
 import { Address } from "../types/address"
+import Skeleton from '@material-ui/lab/Skeleton'
+import { CancelButton } from "./buttons/CancelButton"
+import { BuyButton } from "./buttons/BuyButton"
 
-const useStyles = makeStyles({
+const useStyles = makeStyles((theme) => ({
   root: {
-    width: 345
+    width: 345,
+    height: 600,
   },
   media: {
-    height: 350,
+    height: 340
   },
-})
+  content: {
+    height: 'auto'
+  },
+  actions: {
+    margin: theme.spacing(1)
+  }
+}))
 
 export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }) {
   const classes = useStyles()
@@ -24,7 +36,18 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
   const history = useHistory()
   const nftStore = useStore(NftStore)
   const createOrderStore = useStore(CreateOrderStore)
-  const itemMetata = useObservable(nftStore.metadataOfItem(collection, id))
+  const web3Store = useStore(Web3Store)
+  const orderbookStore = useStore(OrderbookStore)
+
+  const account = useObservable(web3Store.account)
+  const metadata = useObservable(nftStore.metadataOfItem(collection, id))
+  const itemOwner = useObservable(nftStore.ownerOf(collection, id))
+  const listing = useObservable(orderbookStore.listingFor(collection, id))
+
+  const isOwner = account !== undefined && account === itemOwner || true
+
+  const itemMetadata = metadata?.item
+  const name = itemMetadata ? itemMetadata?.name ?? 'Not found' : 'Loading ...'
 
   useEffect(() => {
     nftStore.fetchItemInfo(collection, id)
@@ -32,26 +55,33 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
 
   return <Card className={classes.root}>
     <CardActionArea>
-      <CardMedia
+      { itemMetadata && <CardMedia
         className={classes.media}
-        image={itemMetata?.item?.image}
-        title="Contemplative Reptile"
-      />
+        image={itemMetadata.image ?? '/not-found.png'}
+        title={name}
+      /> }
+      { !itemMetadata && <Skeleton
+        variant="rect"
+        className={classes.media}
+      /> }
       <CardContent>
         <Typography gutterBottom variant="h5" component="h2" align="left">
-          {itemMetata?.item?.name}
+          { itemMetadata && name } { !itemMetadata && <Skeleton />}
         </Typography>
-        <Typography variant="body2" color="textSecondary" component="p" align="left">
-          {`${itemMetata?.item?.description?.slice(0, 100)}...`}
-        </Typography>
+        { itemMetadata && <Typography variant="body2" color="textSecondary" component="p" align="left">
+          {itemMetadata?.description ? `${itemMetadata.description.slice(0, 100)}...` : 'Metadata not found'}
+        </Typography> }
+        { !itemMetadata && <Skeleton variant="rect" height={125} />}
       </CardContent>
     </CardActionArea>
-    <CardActions>
+    <CardActions className={classes.actions}>
       {/** TODO: Only sell if owner */}
-      <Button size="small" color="primary" onClick={() => createOrderStore.openCreateOrder({ collection, id })}>
+      <CancelButton order={listing?.order} variant="text" />
+      { isOwner && <Button size="small" color="primary" onClick={() => createOrderStore.openCreateOrder({ collection, id })}>
         Sell
-      </Button>
-      <Button size="small" color="primary" onClick={() => history.push(`/${collection}/${id.toString()}`)}>
+      </Button> }
+      <BuyButton order={listing?.order} variant="contained" />
+      <Button size="small" color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
         View
       </Button>
     </CardActions>

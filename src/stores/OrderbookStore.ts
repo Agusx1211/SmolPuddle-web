@@ -1,9 +1,16 @@
 
+import { Web3Provider } from "@ethersproject/providers"
+import { ethers } from "ethers"
 import { Store } from "."
+import { SmolPuddleAbi } from "../abi/SmolPuddle"
 import { isSupportedOrder } from "../components/modal/CreateOrderModal"
+import { SmolPuddleContract } from "../constants"
+import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
+import { safe } from "../utils"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
+import { Web3Store } from "./Web3Store"
 
 export type StoredOrder = {
   order: Order,
@@ -55,6 +62,16 @@ export class OrderbookStore {
     })
   }
 
+  listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
+    const addr = parseAddress(contractAddr)
+    if (!addr) return undefined
+
+    const id = safe(() => ethers.BigNumber.from(iid))
+    if (!id) return undefined
+
+    return orders.find((o) => ethers.utils.getAddress(o.order.sell.token) === addr && id.eq(o.order.sell.amountOrId))
+  })
+
   addOrder = (order: Order, broadcast: boolean = false) => {
     if (broadcast) this.store.get(WakuStore).sendMsg([order])
 
@@ -75,5 +92,24 @@ export class OrderbookStore {
     const orders = this.orders.get()
     const notSeenInWindow = orders.filter((o) => now - o.lastSeen > REBROADCAST_WINDOW)
     this.store.get(WakuStore).sendMsg(notSeenInWindow)
+  }
+
+  refreshStatus = async (...orders: Order[]) => {
+    // TODO: We should check more things
+    // like NFT ownership and approvalForAll status
+    const provider = this.store.get(Web3Store).provider.get()
+    const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
+    const statuses = await Promise.all(orders.map((o) => contract.status(o.seller, o.hash)))
+
+    const executed = orders.filter((_, i) => statuses[i].eq(1))
+    const canceled = orders.filter((_, i) => statuses[i].eq(2))
+
+    this.executedOrders.update((prev) => {
+      return [...prev, ...executed.map((o) => o.hash)]
+    })
+
+    this.canceledOrders.update((prev) => {
+      return [...prev, ...canceled.map((o) => o.hash)]
+    })
   }
 }

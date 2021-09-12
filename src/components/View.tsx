@@ -2,8 +2,10 @@
 import { Container, Grid, makeStyles, Typography } from "@material-ui/core"
 import { useEffect } from "react"
 import { useParams } from "react-router"
+import { Link } from "react-router-dom"
 import { useObservable, useStore } from "../stores"
 import { NftStore } from "../stores/NftStore"
+import Skeleton from '@material-ui/lab/Skeleton'
 
 const useStyles = makeStyles((theme) => ({
   nftTitle: {
@@ -24,11 +26,16 @@ export function View() {
   const { collection, id } = useParams<{ collection: string, id: string }>()
 
   const nftStore = useStore(NftStore)
-  const itemMetata = useObservable(nftStore.metadataOfItem(collection, id))
+
+  const metadata = useObservable(nftStore.metadataOfItem(collection, id))
+  const itemOwner = useObservable(nftStore.ownerOf(collection, id))
+
+  const itemMetadata = metadata?.item
 
   useEffect(() => {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
+    nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
 
   return <Container>
@@ -40,17 +47,21 @@ export function View() {
       spacing={1}
     >
       <Grid container item xs>
-        <img className={classes.nftImage}  src={itemMetata?.item?.image} alt={itemMetata?.item?.name}></img>
-        <Typography color="textSecondary">
-          Collection: {itemMetata?.collection?.name} ({itemMetata?.collection?.symbol})
-        </Typography>
+        { itemMetadata && <img className={classes.nftImage} height={700} src={itemMetadata.image} alt={itemMetadata.name}></img> }
+        { !itemMetadata && <Skeleton variant="rect" height={700}/> }
       </Grid>
-      <Grid container item xs>
+      <Grid container item md={7}>
         <Typography className={classes.nftTitle} variant="h4" color="textSecondary" align="left">
-          {itemMetata?.item?.name}
+          {itemMetadata ? itemMetadata.name : <Skeleton width={400} />}
         </Typography>
-        <Typography className={classes.nftDescription} variant="h6" color="textSecondary" align="left">
-          {itemMetata?.item?.description}
+        <Typography className={classes.nftDescription} color="textSecondary" align="left">
+          {itemMetadata ? itemMetadata.description : <Skeleton variant="rect" height={300} width={600} />}
+        </Typography>
+        <Typography className={classes.nftDescription} color="textSecondary" align="left">
+          Owner: {itemOwner}
+        </Typography>
+        <Typography className={classes.nftDescription}  color="textSecondary">
+          Collection: <Link to={`/${collection}`}>{metadata?.collection?.name} ({metadata?.collection?.symbol})</Link>
         </Typography>
       </Grid>
     </Grid>

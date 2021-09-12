@@ -7,6 +7,10 @@ import clsx from 'clsx'
 import { Web3Store } from "../../stores/Web3Store";
 import { attachSignature, Currency, newOrder, Order } from "../../types/order";
 import { OrderbookStore } from "../../stores/OrderbookStore";
+import { useEffect, useState } from "react";
+import { safe } from "../../utils";
+import { ERC721Abi } from "../../abi/ERC721";
+import { SmolPuddleContract } from "../../constants";
 
 export function isSupportedOrder(order: Order): boolean {
   return (
@@ -39,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }))
 
-export const DefaultAskCurrency = "0xWETH"
+export const DefaultAskCurrency = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
 
 export function CreateOrderModalContent(props: { collection: string, id: ethers.BigNumberish }) {
   const { collection, id } = props
@@ -50,7 +54,27 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   const web3Store = useStore(Web3Store)
   const orderBookStore = useStore(OrderbookStore)
 
+  const provider = useObservable(web3Store.provider)
+  const account = useObservable(web3Store.account)
+
   const itemMetata = useObservable(nftStore.metadataOfItem(collection, id))
+  const [amount, setAmount] = useState("")
+  const [isApproved, setIsApproved] = useState<boolean | undefined>(undefined)
+  const [update, setUpdate] = useState(0)
+  const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    setIsApproved(undefined)
+    const contract = new ethers.Contract(collection, ERC721Abi).connect(provider)
+
+    if (account) {
+      contract.isApprovedForAll(account, SmolPuddleContract).then((isApproved: boolean) => {
+        setIsApproved(isApproved)
+      }).catch((e: any) => {
+        console.error("Error loading is approved for all", e)
+      })
+    }
+  }, [provider, collection, account, update])
 
   const handleCreateOrder = async () => {
     // Connect to chain
@@ -60,11 +84,27 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       return
     }
 
-    const seller = web3Store.account.get()
-    if (!seller || ethers.utils.isAddress(seller)) {
+    const seller = safe(() => web3Store.account.get())
+    if (!seller) {
       return console.error('invalid address', seller)
     }
 
+    const ethAmount = safe(() => ethers.utils.parseEther(amount))
+    if (!ethAmount) {
+      return console.error('invalid amount', amount)
+    }
+
+    if (!isApproved) {
+      const contract = new ethers.Contract(collection, ERC721Abi).connect(provider.getSigner())
+      contract.setApprovalForAll(SmolPuddleContract, true).then((tx: ethers.providers.TransactionResponse) => {
+        setPending(true)
+        tx.wait().then((receipt) => {
+          setPending(false)
+          setUpdate(update + 1)
+        })
+      })
+      return
+    }
 
     // Build order
     const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
@@ -73,7 +113,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       seller,
       ask: {
         token: DefaultAskCurrency,
-        amountOrId: ethers.utils.parseEther('1')
+        amountOrId: ethAmount
       },
       sell: {
         token: collection,
@@ -93,6 +133,11 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
     orderBookStore.addOrder(signedOrder, true)
   }
 
+  useEffect(() => {
+    setAmount("")
+    setPending(false)
+  }, [collection, id])
+
   return <div className={classes.paper}>
     <h2 id="transition-modal-title">Selling {itemMetata?.collection.name} - {itemMetata?.item?.name}</h2>
     <TextField
@@ -102,9 +147,11 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       InputProps={{
         startAdornment: <InputAdornment position="start">ETH</InputAdornment>,
       }}
+      value={amount}
+      onChange={(e) => setAmount(e.target.value)}
     />
     <div className={classes.buttons}>
-      <Button color="primary" onClick={handleCreateOrder}>Create order</Button>
+      <Button color="primary" disabled={pending} onClick={handleCreateOrder}>Create order</Button>
       <Button onClick={() => createOrderStore.closeCreateOrder()}>
         Cancel
       </Button>

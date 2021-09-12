@@ -10,14 +10,29 @@ import { Web3Store } from "./Web3Store"
 
 type ItemMetadataStorage = Record<string, Record<string, Metadata>>
 type CollectionMetadataStorage = Record<string, CollectionMetadata>
+type ItemOwnersStorage = Record<string, Record<string, string | undefined>>
 
 export class NftStore {
   // Maybe this shouldn't persist, or we should use indexdb
   // public metadata = new LocalStore<MetadataStorage, MetadataStorage>('@smolpuddle.known.metadata', {})
   public itemMetadatas = observable<ItemMetadataStorage>({})
   public collectionMetadatas = observable<CollectionMetadataStorage>({})
+  public itemOwners = observable<ItemOwnersStorage>({})
 
   constructor(private store: Store) {}
+
+  ownerOf = (contractAddr: string, iid: ethers.BigNumberish) => this.itemOwners.select((itemOwners) => {
+    const addr = parseAddress(contractAddr)
+    if (!addr) return undefined
+
+    const id = safe(() => ethers.BigNumber.from(iid))
+    if (!id) return undefined
+
+    const collection = itemOwners[addr]
+    if (!collection) return undefined
+
+    return collection[id.toString()]
+  })
 
   metadataOfItem = (contractAddr: string, iid: ethers.BigNumberish) => this.itemMetadatas.select((itemMetadatas) => {
     const addr = parseAddress(contractAddr)
@@ -41,6 +56,39 @@ export class NftStore {
     if (!addr) return undefined
     return collectionMetadatas[ethers.utils.getAddress(addr)]
   })
+
+  fetchOwnerInfo = (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false): any => {
+    const addr = safe(() => ethers.utils.getAddress(contractAddr))
+    if (addr === undefined) return
+
+    const id = safe(() => ethers.BigNumber.from(iid))
+    if (id === undefined) return
+
+    if (!force && this.ownerOf(addr, id).get() !== undefined) return
+
+    const provider = this.store.get(Web3Store).provider.get()
+    const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
+
+    const setOwner = (owner: string) => {
+      this.itemOwners.update((val) => {
+        if (val[addr] === undefined) val[addr] = {}
+        val[addr][id.toString()] = owner
+        return Object.assign({}, val)
+      })
+    }
+
+    contract.ownerOf(id).then((owner: string) => {
+      const ownerAddr = parseAddress(owner)
+      if (!ownerAddr) return console.warn("error parsing owner address", owner)
+      setOwner(ownerAddr)
+    }).catch((e: any) => {
+      console.warn(e)
+      // TODO: This may be a real error
+      // but some contracts revert when the nft is not owned
+      // figure a way of differenciate
+      setOwner(ethers.constants.AddressZero)
+    })
+  }
 
   fetchCollectionInfo = (contractAddr: string, force: boolean = false) => {
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
@@ -90,11 +138,14 @@ export class NftStore {
         response.json().then((json) => {
           if (isMetadata(json)) {
             this.itemMetadatas.update((val) => {
+              const meta = Object.assign({}, json)
+              meta.image = this.store.get(IpfsStore).mapToURI(meta.image)
+
               if (!val[addr]) {
                 val[addr] = {}
               }
     
-              val[addr][id.toString()] = json
+              val[addr][id.toString()] = meta
               return Object.assign({}, val)
             })
           } else {
