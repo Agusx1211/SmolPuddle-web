@@ -1,6 +1,6 @@
 import { Store } from "."
 
-export const IpfsGateway = 'http://localhost:8081/https://cloudflare-ipfs.com/'
+export const IpfsGateway = 'https://cloudflare-ipfs.com/'
 export function isIpfs(uri: string): boolean {
   return uri.startsWith('ipfs://')
 }
