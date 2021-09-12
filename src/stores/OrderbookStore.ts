@@ -17,14 +17,14 @@ export type StoredOrder = {
   lastSeen: number
 }
 
-export const REBROADCAST_WINDOW = 86400
+export const REBROADCAST_WINDOW = 30
 
 export class OrderbookStore {
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
-  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolsea.known.orders", [])
-  public canceledOrders = new LocalStore<string[], string[]>("@smolsea.canceled.orders", [])
-  public executedOrders = new LocalStore<string[], string[]>("@smolsea.executed.orders", [])
+  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders", [])
+  public canceledOrders = new LocalStore<string[], string[]>("@smolpuddle.canceled.orders", [])
+  public executedOrders = new LocalStore<string[], string[]>("@smolpuddle.executed.orders", [])
 
   // This may not be neccesary if we just stop tracking deleted orders
   // but keeping track of them may be neccesary so we don't relay anything that's not valid
@@ -60,6 +60,8 @@ export class OrderbookStore {
         })
       })
     })
+
+    this.broadcast()
   }
 
   listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
@@ -111,5 +113,7 @@ export class OrderbookStore {
     this.canceledOrders.update((prev) => {
       return [...prev, ...canceled.map((o) => o.hash)]
     })
+
+    this.broadcast()
   }
 }

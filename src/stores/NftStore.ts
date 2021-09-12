@@ -5,12 +5,14 @@ import { ERC721Abi } from "../abi/ERC721"
 import { Address, parseAddress } from "../types/address"
 import { CollectionMetadata, isMetadata, Metadata } from "../types/metadata"
 import { safe } from "../utils"
+import { CollectionsStore } from "./CollectionsStore"
 import { IpfsStore, isIpfs } from "./IpfsStore"
 import { Web3Store } from "./Web3Store"
 
 type ItemMetadataStorage = Record<string, Record<string, Metadata>>
 type CollectionMetadataStorage = Record<string, CollectionMetadata>
 type ItemOwnersStorage = Record<string, Record<string, string | undefined>>
+type OwnedNftsStorage = Record<string, { collection: Address, id: ethers.BigNumber }[]>
 
 export class NftStore {
   // Maybe this shouldn't persist, or we should use indexdb
@@ -18,8 +20,16 @@ export class NftStore {
   public itemMetadatas = observable<ItemMetadataStorage>({})
   public collectionMetadatas = observable<CollectionMetadataStorage>({})
   public itemOwners = observable<ItemOwnersStorage>({})
+  public ownedNfts = observable<OwnedNftsStorage>({})
 
   constructor(private store: Store) {}
+
+  nftsOf = (ownerAddr: string) => this.ownedNfts.select((ownedNfts) => {
+    const addr = parseAddress(ownerAddr)
+    if (!addr) return undefined
+  
+    return ownedNfts[addr] ?? []
+  })
 
   ownerOf = (contractAddr: string, iid: ethers.BigNumberish) => this.itemOwners.select((itemOwners) => {
     const addr = parseAddress(contractAddr)
@@ -56,6 +66,36 @@ export class NftStore {
     if (!addr) return undefined
     return collectionMetadatas[ethers.utils.getAddress(addr)]
   })
+
+  fetchNftsOfOwner = async (ownerAddr: string) => {
+    const addr = safe(() => ethers.utils.getAddress(ownerAddr))
+    if (addr === undefined) return
+
+    const knownCollections = this.store.get(CollectionsStore).knownCollections.get()
+    const provider = this.store.get(Web3Store).provider.get()
+    const knownNfts = await Promise.all(knownCollections.map(async (collection) => {
+      try {
+        const contract = new ethers.Contract(collection, ERC721Abi).connect(provider)
+        const balance = await contract.balanceOf(addr)
+        const ids = await Promise.all(new Array(balance.toNumber().fill(0).map((_: any, i: number) => {
+          return contract.tokenOfOwnerByIndex(addr, i)
+        })))
+        return { collection, ids: ids as ethers.BigNumber[] }
+      } catch (e: any) {
+        console.warn("error reading nfts for collection", addr, collection, e)
+        return { collection, ids: [] }
+      }
+    }))
+
+    const flat = knownNfts.reduce((p, nft) => {
+      return [...p, ...nft.ids.map((id) => ({ collection: nft.collection, id}))]
+    }, [] as { collection: Address, id: ethers.BigNumber }[])
+
+    this.ownedNfts.update((val) => {
+      val[addr] = flat
+      return Object.assign({}, val)
+    })
+  }
 
   fetchOwnerInfo = (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false): any => {
     const addr = safe(() => ethers.utils.getAddress(contractAddr))

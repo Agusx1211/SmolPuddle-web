@@ -1,4 +1,5 @@
 import { ethers } from "ethers"
+import { Observable } from "micro-observables"
 import Web3Modal from "web3modal"
 import { observable, Store } from "."
 import { Address, isAddress } from "../types/address"
@@ -10,9 +11,9 @@ export class Web3Store {
 
   public injected = observable<ethers.providers.Web3Provider | undefined>(undefined)
   public accounts = observable<Address[] | undefined>(undefined)
-  public account = this.accounts.select((a) => a ? a[0] : undefined)
 
-  public provider = this.injected.select((injected) => injected ? injected : new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
+  public account: Observable<string | undefined>
+  public provider: Observable<ethers.providers.JsonRpcProvider | ethers.providers.Web3Provider>
 
   constructor(private store: Store) {
     this.modal = new Web3Modal({
@@ -30,6 +31,9 @@ export class Web3Store {
         this.accounts.set(undefined)
       }
     })
+
+    this.account = this.accounts.select((a) => a ? a[0] : undefined)
+    this.provider = this.injected.select((injected) => injected ? injected : new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))  
   }
 
   async connect() {

@@ -1,4 +1,4 @@
-
+import React from 'react'
 import Button from '@material-ui/core/Button'
 import Grid from '@material-ui/core/Grid'
 import Typography from '@material-ui/core/Typography'
@@ -96,6 +96,11 @@ export function Header() {
                 Sell
               </Button>
             </Grid>
+            { account && <Grid item>
+              <Button onClick={() => history.push(`/address/${account}`) } variant="outlined" color="primary">
+                My NFTs
+              </Button>
+            </Grid> }
             <Grid item>
              <Button onClick={() => web3store.connect() } variant="outlined" color="primary">
                 { account ? `Disconnect ${shortAddress(account)}` : 'Connect'}

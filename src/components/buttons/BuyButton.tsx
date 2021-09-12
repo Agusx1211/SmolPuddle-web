@@ -1,3 +1,4 @@
+import React from 'react'
 import { Button } from "@material-ui/core";
 import { ethers } from "ethers";
 import { useState } from "react";
@@ -28,7 +29,6 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
     }
 
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
-    console.log(orderAbiEncode(order))
     contract.swap(orderAbiEncode(order), order.signature).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)
       tx.wait().then(() => {

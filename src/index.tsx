@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals'
 import { createStore, StoreProvider } from './stores'
 
 const store = createStore()
+;(window as any).store = store
 
 ReactDOM.render(
   <React.StrictMode>

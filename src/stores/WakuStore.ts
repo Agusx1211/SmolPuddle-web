@@ -1,10 +1,10 @@
 import { ethers } from 'ethers'
-import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
+import { getBootstrapNodes, Waku, WakuMessage } from 'js-waku'
 
 import { Store } from './'
 
 export const WakuTopics = {
-  SmolseaMessage: `/smolsea-dev/1/order`
+  SmolPuddleMessage: `/smolpuddledev/1/order`
 }
 
 type WakuObserver = {
@@ -43,14 +43,6 @@ export type WakuCallback<T extends WakuMessageBase> = {
   isEvent: (cand: WakuMessageBase & Partial<T>) => cand is T
 }
 
-// WakuStores uses Symmetric encryption for the messages
-//
-// this is not ideal because for it we need to get a shared key accross all devices
-// this is not  a problem right now because we have the TorusSigner as a common key, and we can derive a encryption key from it
-//
-// ideally we should use Asymmetric and have keys for each signer, however there are liveness challangues with that technique
-// for example, how can we retrieve past messages when the user opens a new session but the old session is closed ?
-
 export class WakuStore {
   public waku: Waku | undefined
 
@@ -69,8 +61,16 @@ export class WakuStore {
     if (this.waku === undefined) {
       // Start waku
       const waku = await Waku.create()
-      const bootNodes = await getStatusFleetNodes()
-      await Promise.all(bootNodes.map(n => waku.dial(n)))
+      const bootNodes = await getBootstrapNodes()
+      await Promise.all(bootNodes.map(async (n: string) => {
+        try {
+          console.log("connect to", n)
+          await waku.dial(n)
+        } catch (e) {
+          console.warn("error connecting to peer", n, e)
+        }
+      }))
+
       this.waku = waku
 
       // Start listening
@@ -114,6 +114,8 @@ export class WakuStore {
   }
 
   sendMsg = async (rmsg: Omit<WakuMessageBase, keyof WakuMessageInternal> | WakuMessageBase) => {
+    console.log("pre sending message", rmsg)
+
     try {
       const msg = rmsg as WakuMessageBase
 
@@ -124,13 +126,16 @@ export class WakuStore {
 
       if (!this.waku) {
         this.messageQueue.push(msg)
+        console.log("stored in queue")
         return
       }
 
-      const topic = WakuTopics.SmolseaMessage
+      const topic = WakuTopics.SmolPuddleMessage
+
 
       const json = JSON.stringify(msg)
       const wmgs = await WakuMessage.fromUtf8String(json, topic)
+      console.log("sending message", json, wmgs)
       await this.waku.relay.send(wmgs)
     } catch (e) {
       console.error('error sending waku message', e)
@@ -140,6 +145,11 @@ export class WakuStore {
   initWaku = () => {
     this.listen()
     this.dispatchQueue()
+
+    setTimeout(() => {
+      console.log("call connect")
+      this.connect()
+    }, 1000)
   }
 
   isInitialized = () => {
@@ -147,6 +157,7 @@ export class WakuStore {
   }
 
   dispatchQueue = () => {
+    console.log("dispatching queue")
     this.messageQueue.forEach(msg => this.sendMsg(msg))
     this.messageQueue = []
   }
@@ -154,12 +165,7 @@ export class WakuStore {
   listen = async () => {
     if (!this.waku) return
 
-    const topic = WakuTopics.SmolseaMessage
-
-    // Remove old encryption keys
-    this.waku.relay.decryptionKeys.forEach(k => {
-      this.waku?.relay.deleteDecryptionKey(k)
-    })
+    const topic = WakuTopics.SmolPuddleMessage
 
     if (this.observer) {
       if (this.observer.topics.length > 0 || this.observer.topics[0] !== topic) {
@@ -178,8 +184,7 @@ export class WakuStore {
     this.waku.relay.addObserver(callback, [topic])
 
     try {
-      await this.waku.store.queryHistory({
-        contentTopics: [topic],
+      await this.waku.store.queryHistory([topic], {
         callback: (msgs: WakuMessage[]) => {
           this.messages.push(...msgs)
           this.callCallbacks(this.callbacks, ...msgs)

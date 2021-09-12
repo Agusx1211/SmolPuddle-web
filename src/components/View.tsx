@@ -1,4 +1,4 @@
-
+import React from 'react'
 import { Container, Grid, makeStyles, Typography } from "@material-ui/core"
 import { useEffect } from "react"
 import { useParams } from "react-router"
@@ -6,6 +6,10 @@ import { Link } from "react-router-dom"
 import { useObservable, useStore } from "../stores"
 import { NftStore } from "../stores/NftStore"
 import Skeleton from '@material-ui/lab/Skeleton'
+import { CancelButton } from "./buttons/CancelButton"
+import { SellButton } from "./buttons/SellButton"
+import { BuyButton } from "./buttons/BuyButton"
+import { OrderbookStore } from "../stores/OrderbookStore"
 
 const useStyles = makeStyles((theme) => ({
   nftTitle: {
@@ -26,17 +30,22 @@ export function View() {
   const { collection, id } = useParams<{ collection: string, id: string }>()
 
   const nftStore = useStore(NftStore)
+  const orderbookStore = useStore(OrderbookStore)
 
   const metadata = useObservable(nftStore.metadataOfItem(collection, id))
   const itemOwner = useObservable(nftStore.ownerOf(collection, id))
+  const listing = useObservable(orderbookStore.listingFor(collection, id))
 
   const itemMetadata = metadata?.item
+  const name = itemMetadata?.name ?? (metadata !== undefined ? `${metadata?.collection?.name ?? '...'} #${id.toString()}` : undefined)
 
   useEffect(() => {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
     nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
+
+  console.log("show skeleton", !(itemMetadata?.image))
 
   return <Container>
     <Grid
@@ -47,12 +56,12 @@ export function View() {
       spacing={1}
     >
       <Grid container item xs>
-        { itemMetadata && <img className={classes.nftImage} height={700} src={itemMetadata.image} alt={itemMetadata.name}></img> }
-        { !itemMetadata && <Skeleton variant="rect" height={700}/> }
+      { !(itemMetadata?.image) && <Skeleton className={classes.nftImage} variant="rect" height={700}/> }
+        { itemMetadata?.image && <img className={classes.nftImage} height={700} src={itemMetadata.image} alt={itemMetadata.name}></img> }
       </Grid>
       <Grid container item md={7}>
         <Typography className={classes.nftTitle} variant="h4" color="textSecondary" align="left">
-          {itemMetadata ? itemMetadata.name : <Skeleton width={400} />}
+          { name ? name : <Skeleton width={400} />}
         </Typography>
         <Typography className={classes.nftDescription} color="textSecondary" align="left">
           {itemMetadata ? itemMetadata.description : <Skeleton variant="rect" height={300} width={600} />}
@@ -63,6 +72,22 @@ export function View() {
         <Typography className={classes.nftDescription}  color="textSecondary">
           Collection: <Link to={`/${collection}`}>{metadata?.collection?.name} ({metadata?.collection?.symbol})</Link>
         </Typography>
+        <Grid
+          container
+          direction="row"
+          justifyContent="flex-start"
+          spacing={1}
+        >
+          <Grid item>
+            <CancelButton order={listing?.order} variant="text" />
+          </Grid>
+          <Grid item>
+            <SellButton collection={collection} id={id} variant="text" />
+          </Grid>
+          <Grid item>
+            <BuyButton order={listing?.order} variant="contained" />
+          </Grid>
+        </Grid>
       </Grid>
     </Grid>
   </Container>

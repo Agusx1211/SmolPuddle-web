@@ -29,6 +29,8 @@ export class CollectionsStore {
     const addr = parseAddress(collection)
     if (addr === undefined) return console.warn("invalid address")
 
+    this.saveCollection(addr)
+
     if (!force && this.allItemsOfCollection.get()[addr] !== undefined) return console.info("collection cache hit", addr)
 
     // There may be better ways of fetching all items of a collection
