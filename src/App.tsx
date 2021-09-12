@@ -1,14 +1,10 @@
 
 import './App.css'
 import { Header } from './components/Header'
-import { HashRouter, Route, useParams } from 'react-router-dom'
-import { View } from './components/View'
+import { HashRouter, Route } from 'react-router-dom'
 import { createTheme, ThemeProvider } from '@material-ui/core'
-import { Collection } from './components/Collection'
 import { CreateOrderModal } from './components/modal/CreateOrderModal'
-import { ethers } from 'ethers'
-import { safe } from './utils'
-import { parseAddress } from './types/address'
+import { ItemOrCollection } from './components/ItemOrCollection'
 
 const theme = createTheme({
   palette: {
@@ -17,20 +13,6 @@ const theme = createTheme({
     }
   },
 })
-
-export function CollectionSubview() {
-  const { collection, id } = useParams<{ collection: string, id: string }>()
-
-  const sid = safe(() => ethers.BigNumber.from(id))
-  const scollection = parseAddress(collection)
-
-  console.log(sid)
-  // TODO: Use props for views and collection
-  return <>
-    { sid && <View />}
-    { (scollection && !sid) && <Collection />}
-  </>
-}
 
 function App() {
   return (
@@ -43,7 +25,7 @@ function App() {
             path={["/:collection/:id", "/:collection"]}
             strict={true}
           >
-            <CollectionSubview />
+            <ItemOrCollection />
           </Route>
         </HashRouter>
       </ThemeProvider>

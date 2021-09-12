@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { Waku, getStatusFleetNodes, WakuMessage } from 'js-waku'
+import { Waku, WakuMessage } from 'js-waku'
 
 import { Store } from './'
 
@@ -69,8 +69,8 @@ export class WakuStore {
     if (this.waku === undefined) {
       // Start waku
       const waku = await Waku.create()
-      const bootNodes = await getStatusFleetNodes()
-      await Promise.all(bootNodes.map(n => waku.dial(n)))
+      // const bootNodes = await getStatusFleetNodes()
+      // await Promise.all(bootNodes.map(n => waku.dial(n)))
       this.waku = waku
 
       // Start listening

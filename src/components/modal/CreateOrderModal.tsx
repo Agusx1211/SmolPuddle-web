@@ -6,6 +6,7 @@ import { NftStore } from "../../stores/NftStore";
 import clsx from 'clsx'
 import { Web3Store } from "../../stores/Web3Store";
 import { attachSignature, Currency, newOrder, Order } from "../../types/order";
+import { OrderbookStore } from "../../stores/OrderbookStore";
 
 export function isSupportedOrder(order: Order): boolean {
   return (
@@ -47,6 +48,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   const nftStore = useStore(NftStore)
   const createOrderStore = useStore(CreateOrderStore)
   const web3Store = useStore(Web3Store)
+  const orderBookStore = useStore(OrderbookStore)
 
   const itemMetata = useObservable(nftStore.metadataOfItem(collection, id))
 
@@ -87,6 +89,8 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
     const signature = await injected.getSigner().signMessage(order.hash)
     const signedOrder = attachSignature(order, signature)
 
+    // Broadcast order
+    orderBookStore.addOrder(signedOrder, true)
   }
 
   return <div className={classes.paper}>

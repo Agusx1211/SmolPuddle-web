@@ -19,7 +19,13 @@ export function Collection() {
   })
 
   return <Container>
-    <Grid container spacing={6}>
+    <Grid
+      container
+      spacing={6}
+      direction="row"
+      justifyContent="center"
+      alignItems="center"
+    >
       { itemsOfCollection && itemsOfCollection.slice(0, 25).map((item) => <Grid item xs>
         <ItemCard key={`item${item}`} collection={collection} id={item} />
       </Grid>)}
