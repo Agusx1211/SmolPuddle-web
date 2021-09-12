@@ -3,8 +3,8 @@ import Web3Modal from "web3modal"
 import { observable, Store } from "."
 import { Address, isAddress } from "../types/address"
 
-const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
-
+// const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
+const ARBITRUM_DEFAULT_RPC = "http://localhost:8081/http://192.168.86.53:8545/"
 export class Web3Store {
   private modal: Web3Modal
 

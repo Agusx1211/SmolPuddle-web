@@ -22,10 +22,10 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 660
   },
   headButtons: {
-    marginTop: theme.spacing(4)
+    marginTop: theme.spacing(2)
   },
   title: {
-    marginTop: 70,
+    marginTop: 40,
     padding: 0
   },
   search: {
@@ -70,7 +70,7 @@ export function Header() {
   return (
     <div className={classes.head}>
       <Container className={classes.container}>
-        <Grid container spacing={2} justify="center">
+        <Grid container spacing={1} justify="center">
           <Grid item>
             {/* <img src={Magpie} height={140}></img> */}
           </Grid>
@@ -80,9 +80,6 @@ export function Header() {
             </Typography>
           </Grid>
         </Grid>
-          <Typography variant="h5" align="center" color="textSecondary" paragraph>
-            The puddle is rainwater I swear.
-          </Typography>
         <div className={classes.headButtons}>
           <Grid container spacing={2} justify="center">
             <Grid item>

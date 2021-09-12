@@ -10,7 +10,7 @@ function App() {
       <HashRouter>
         <Header />
         <Route
-          path="./:collection/:id"
+          path="/:collection/:id"
         >
           <View />
         </Route>

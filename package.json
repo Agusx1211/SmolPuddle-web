@@ -13,6 +13,7 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "ethers": "^5.4.6",
+    "js-ipfs": "^0.0.301",
     "js-waku": "^0.10.0",
     "micro-observables": "^1.7.0",
     "react": "^17.0.2",

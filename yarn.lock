@@ -8149,6 +8149,11 @@ jest@26.6.0:
     import-local "^3.0.2"
     jest-cli "^26.6.0"
 
+js-ipfs@^0.0.301:
+  version "0.0.301"
+  resolved "https://registry.yarnpkg.com/js-ipfs/-/js-ipfs-0.0.301.tgz#446dc80e8cd06cfc10b98825720e8eeee6efebcd"
+  integrity sha1-RG3IDozQbPwQuYglcg6O7ubv680=
+
 js-sha3@0.5.7:
   version "0.5.7"
   resolved "https://registry.yarnpkg.com/js-sha3/-/js-sha3-0.5.7.tgz#0d4ffd8002d5333aabaf4a23eed2f6374c9f28e7"
