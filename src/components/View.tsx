@@ -31,8 +31,6 @@ export function View() {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collection, id])
 
-  console.log(itemMetata)
-
   return <Container>
     <Grid
       container

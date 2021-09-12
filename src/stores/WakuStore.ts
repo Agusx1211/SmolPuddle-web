@@ -18,9 +18,7 @@ export type WakuMessageInternal = {
   sender: string
 }
 
-export type WakuMessageBase = WakuMessageInternal & {
-  type: string
-}
+export type WakuMessageBase = WakuMessageInternal
 
 export const IsMessageBase = (cand: any): cand is WakuMessageBase => {
   return (

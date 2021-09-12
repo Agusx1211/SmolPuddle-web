@@ -1,13 +1,21 @@
 
 import { Store } from "."
-import { isOrder, Order } from "../types/order"
+import { isSupportedOrder } from "../components/modal/CreateOrderModal"
+import { isOrderArray, Order, orderHash } from "../types/order"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
+
+export type StoredOrder = {
+  order: Order,
+  lastSeen: number
+}
+
+export const REBROADCAST_WINDOW = 86400
 
 export class OrderbookStore {
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
-  public knownOrders = new LocalStore<Order[], Order[]>("@smolsea.known.orders", [])
+  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolsea.known.orders", [])
   public canceledOrders = new LocalStore<string[], string[]>("@smolsea.canceled.orders", [])
   public executedOrders = new LocalStore<string[], string[]>("@smolsea.executed.orders", [])
 
@@ -16,24 +24,56 @@ export class OrderbookStore {
   public orders = this.knownOrders.observable.select((orders) => {
     return this.canceledOrders.observable.select((canceled) => {
       return this.executedOrders.observable.select((executed) => {
-        return orders.filter((o) => !canceled.includes(o.hash) && !executed.includes(o.hash))
+        return orders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
       })
     })
   })
 
   constructor(private store: Store) {
     this.store.get(WakuStore).onEvent({
-      isEvent: isOrder,
-      callback: (async (order: Order) => {
-        // Add to list of known orders
-        // TODO: let's do some sanity checks first (to avoid flooding)
-        // ideas:
-        //        check if seller has token, sanity check amounts, check isApproved
-        //        put a limit of orders per-seller, check if seller has balance, etc
-        this.knownOrders.set([...this.knownOrders.get(), order])
+      isEvent: isOrderArray,
+      callback: (async (orders: Order[]) => {
+        orders.forEach((order) => {
+          // Add to list of known orders
+          // TODO: let's do some sanity checks first (to avoid flooding)
+          // ideas:
+          //        check if seller has token, sanity check amounts, check isApproved
+          //        put a limit of orders per-seller, check if seller has balance, etc
+          if (orderHash(order) !== order.hash) {
+            console.info('Drop order', order, 'invalid hash')
+            return
+          }
+
+          if (!isSupportedOrder(order)) {
+            console.info('Drop unsupoted order type', order)
+            return
+          }
+
+          this.addOrder(order)
+        })
       })
     })
   }
 
-  
+  addOrder = (order: Order, broadcast: boolean = false) => {
+    if (broadcast) this.store.get(WakuStore).sendMsg([order])
+
+    this.knownOrders.update((known) => {
+      const now = new Date().getTime()
+      const index = known.findIndex((o) => o.order.hash === order.hash)
+      if (index !== -1) {
+        known[index].lastSeen = now
+        return Object.assign([], known)
+      } else {
+        return [...known, { order, lastSeen: now }]
+      }
+    })
+  }
+
+  broadcast = async () => {
+    const now = new Date().getTime()
+    const orders = this.orders.get()
+    const notSeenInWindow = orders.filter((o) => now - o.lastSeen > REBROADCAST_WINDOW)
+    this.store.get(WakuStore).sendMsg(notSeenInWindow)
+  }
 }

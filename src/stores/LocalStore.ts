@@ -47,4 +47,8 @@ export class LocalStore<T extends Object = string, K extends T | undefined = und
     window.localStorage.removeItem(this.key)
     this._observable?.set(this.def as K)
   }
+
+  update(f: (val: T | K) => T |K) {
+    this.set(f(this.get()))
+  }
 }

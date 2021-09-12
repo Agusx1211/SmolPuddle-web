@@ -1,6 +1,7 @@
 import { ethers } from "ethers"
 import { observable } from "micro-observables"
 import { Store } from "."
+import { ERC721Abi } from "../abi/ERC721"
 import { Address, parseAddress } from "../types/address"
 import { CollectionMetadata, isMetadata, Metadata } from "../types/metadata"
 import { safe } from "../utils"
@@ -9,54 +10,6 @@ import { Web3Store } from "./Web3Store"
 
 type ItemMetadataStorage = Record<string, Record<string, Metadata>>
 type CollectionMetadataStorage = Record<string, CollectionMetadata>
-
-const MetadataAbi = [
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "tokenURI",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-]
 
 export class NftStore {
   // Maybe this shouldn't persist, or we should use indexdb
@@ -96,7 +49,7 @@ export class NftStore {
     if (!force && this.metadataOfCollection(addr)?.get() !== undefined) return
 
     const provider = this.store.get(Web3Store).provider.get()
-    const contract = new ethers.Contract(addr, MetadataAbi).connect(provider)
+    const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
 
     contract.name().then((name: string) => {
       this.collectionMetadatas.update((val) => {
@@ -129,7 +82,7 @@ export class NftStore {
     if (!force && this.metadataOfItem(addr, id).get()?.item !== undefined) return
 
     const provider = this.store.get(Web3Store).provider.get()
-    const contract = new ethers.Contract(addr, MetadataAbi).connect(provider)
+    const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
 
     contract.tokenURI(id).then((uri: string) => {
       const url = isIpfs(uri) ? this.store.get(IpfsStore).mapToURI(uri) : uri
