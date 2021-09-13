@@ -24,5 +24,10 @@ export function parseError(e: any): string {
   if (e.data && e.data.message && typeof e.data.message === 'string') {
     return capitalize(e.data.message)
   }
+
+  if (e.message && typeof e.message === 'string') {
+    return capitalize(e.message)
+  }
+
   return capitalize(e.toString())
 }

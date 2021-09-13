@@ -9,23 +9,10 @@ export const OrderAbiType = `tuple(
   uint256 askTokenIdOrAmount,
   uint256 sellTokenIdOrAmount,
   address[] feeRecipients,
-  uint256[] feeAmountsOrIds,
+  uint256[] feeAmounts,
   uint256 expiration,
   bytes32 salt
 )`
-
-/*
-    address seller;              // Seller's address
-    OrderType orderType;         // Indicates which order this is (Nft -> NFT, token -> NFT or NFT -> token)
-    address askToken;            // Token seller is requesting
-    address sellToken;           // Token address that is being sold
-    uint256 askTokenIdOrAmount;  // ID or amount seller is requesting
-    uint256 sellTokenIdOrAmount; // Id or amount seller is selling
-    address[] feeRecipients;     // Array of who will receive fee for the trade
-    uint256[] feeAmounts;        // Amount to be sent for respective fee recipient
-    uint256 expiration;          // When the order expires
-    bytes32 salt;                // Salt to prevent hash collision 
-    */
 
 export const Currency = {
   Ask: 0,
@@ -39,18 +26,69 @@ export function orderAbiEncode(order: OrderConstructor) {
     orderType: order.currency,
     askToken: order.ask.token,
     sellToken: order.sell.token,
-    askTokenIdOrAmount: order.ask.amountOrId,
-    sellTokenIdOrAmount: order.sell.amountOrId,
+    askTokenIdOrAmount: ethers.BigNumber.from(order.ask.amountOrId),
+    sellTokenIdOrAmount: ethers.BigNumber.from(order.sell.amountOrId),
     feeRecipients: order.fees.map((f) => f.recipient),
-    feeAmountsOrIds: order.fees.map((f) => f.amontOrId),
-    expiration: order.expiration,
+    feeAmounts: order.fees.map((f) => ethers.BigNumber.from(f.amontOrId)),
+    expiration: ethers.BigNumber.from(order.expiration),
     salt: order.salt
   }
 }
 
+export const EIP712Header = Buffer.from('1901', 'hex')
+export const DomainHash = "0x6939e60974fbc347aa561478a71c96a18a5e4aad9056b6525a6ad62752877099"
+export const OrderTypehash = "0x2fbfd17f75c3304428e25fe283d35e4b98b85e5a42064810e0ab9627a545e058"
+
 export function orderHash(order: OrderConstructor): string {
+  const feeRecipientsHash = ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      order.fees.map(() => 'address'),
+      order.fees.map((f) => f.recipient)
+    )
+  )
+
+  const feeAmountsOrIdsHash = ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      order.fees.map(() => 'uint256'),
+      order.fees.map((f) => f.amontOrId)
+    )
+  )
+
+  const orderStructHash = ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      [
+        'bytes32',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint256',
+        'uint256',
+        'bytes32',
+        'bytes32',
+        'uint256',
+        'bytes32'
+      ], [
+        OrderTypehash,
+        ethers.BigNumber.from(order.seller),
+        ethers.BigNumber.from(order.currency),
+        ethers.BigNumber.from(order.ask.token),
+        ethers.BigNumber.from(order.sell.token),
+        ethers.BigNumber.from(order.ask.amountOrId),
+        ethers.BigNumber.from(order.sell.amountOrId),
+        feeRecipientsHash,
+        feeAmountsOrIdsHash,
+        ethers.BigNumber.from(order.expiration),
+        order.salt
+      ]
+    )
+  )
+
   return ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode([OrderAbiType], [orderAbiEncode(order)])
+    ethers.utils.solidityPack(
+      ['bytes', 'bytes32', 'bytes32'],
+      [EIP712Header, DomainHash, orderStructHash]
+    )
   )
 }
 

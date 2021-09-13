@@ -1,17 +1,17 @@
-import { Backdrop, Button, Fade, InputAdornment, makeStyles, Modal, TextField } from "@material-ui/core";
-import { ethers } from "ethers";
-import { useObservable, useStore } from "../../stores";
-import { CreateOrderStore } from "../../stores/CreateOrderStore";
-import { NftStore } from "../../stores/NftStore";
+import { Backdrop, Button, Fade, InputAdornment, makeStyles, Modal, TextField } from "@material-ui/core"
+import { ethers } from "ethers"
+import { useObservable, useStore } from "../../stores"
+import { CreateOrderStore } from "../../stores/CreateOrderStore"
+import { NftStore } from "../../stores/NftStore"
 import clsx from 'clsx'
-import { Web3Store } from "../../stores/Web3Store";
-import { attachSignature, Currency, newOrder, Order } from "../../types/order";
-import { OrderbookStore } from "../../stores/OrderbookStore";
-import { useEffect, useState } from "react";
-import { parseError, safe } from "../../utils";
-import { ERC721Abi } from "../../abi/ERC721";
-import { SmolPuddleContract } from "../../constants";
-import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore';
+import { Web3Store } from "../../stores/Web3Store"
+import { attachSignature, Currency, newOrder, Order } from "../../types/order"
+import { OrderbookStore } from "../../stores/OrderbookStore"
+import { useEffect, useState } from "react"
+import { parseError, safe } from "../../utils"
+import { ERC721Abi } from "../../abi/ERC721"
+import { SmolPuddleContract } from "../../constants"
+import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore'
 
 export function isSupportedOrder(order: Order): boolean {
   return (
@@ -128,12 +128,14 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
 
       // Sign order
       // TODO: Should add more info to sign, contract addr, chainId and some string
-      const signature = await injected.getSigner().signMessage(order.hash)
+      const signature = `${await injected.getSigner().signMessage(order.hash)}02`
       const signedOrder = attachSignature(order, signature)
 
       // Broadcast order
       orderBookStore.addOrder(signedOrder, true)
     } catch (e) {
+      console.warn(e)
+
       notificationsStore.notify({
         content: parseError(e),
         severity: 'warning'
