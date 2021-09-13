@@ -43,7 +43,7 @@ export type WakuCallback<T extends WakuMessageBase> = {
   isEvent: (cand: WakuMessageBase & Partial<T>) => cand is T
 }
 
-export class WakuStore {
+export class WakuStoreClass {
   public waku: Waku | undefined
 
   public observer: WakuObserver | undefined = undefined
@@ -55,6 +55,7 @@ export class WakuStore {
 
   constructor(private store: Store) {
     this.initWaku()
+    this.connect()
   }
 
   connect = async (): Promise<void> => {
@@ -142,14 +143,10 @@ export class WakuStore {
     }
   }
 
-  initWaku = () => {
-    this.listen()
+  initWaku = async () => {
+    await this.connect()
+    await this.listen()
     this.dispatchQueue()
-
-    setTimeout(() => {
-      console.log("call connect")
-      this.connect()
-    }, 1000)
   }
 
   isInitialized = () => {
@@ -203,4 +200,9 @@ export class WakuStore {
       this.waku?.relay.deleteObserver(this.observer.callback, this.observer.topics)
     }
   }
+}
+
+export const WakuStore = {
+  constructor: WakuStoreClass,
+  tag: 'wakustore'
 }

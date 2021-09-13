@@ -7,7 +7,7 @@ import { LocalStore } from "./LocalStore"
 import { Web3Store } from "./Web3Store"
 
 
-export class CollectionsStore {
+export class CollectionsStoreClass {
   public knownCollections = new LocalStore<Address[], Address[]>("@smolpuddle.known.collections", [])
   public allItemsOfCollection = observable<Record<string, number[]>>({})
 
@@ -51,4 +51,9 @@ export class CollectionsStore {
       console.warn("error loading total supply", addr, e)
     })
   }
+}
+
+export const CollectionsStore = {
+  constructor: CollectionsStoreClass,
+  tag: 'collectionsstore'
 }

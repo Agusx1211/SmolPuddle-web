@@ -1,41 +1,26 @@
 {
   "compilerOptions": {
     "target": "es2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "jsx": "react",
-    "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "downlevelIteration": true,
-    "importHelpers": true,
-    "removeComments": false,
-    "esModuleInterop": true,
-    "strictNullChecks": true,
-    "noImplicitUseStrict": true,
-    "noImplicitAny": false,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noUnusedParameters": false,
-    "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "checkJs": false,
-    "baseUrl": "./",
-    "rootDir": "./src",
-    "lib": ["dom.iterable", "dom", "es2020"],
-    "types": ["node"],
-
-    "plugins": [
-      {
-        "name": "typescript-styled-plugin"
-      }
-    ],
-
-    "paths": {
-      "~/*": ["src/*"]
-    }
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "**/*.tsx", "test"],
-  "exclude": ["node_modules", "dist", "build"],
-  "files": ["typings/import-images.d.ts"]
+  "include": [
+    "src"
+  ]
 }

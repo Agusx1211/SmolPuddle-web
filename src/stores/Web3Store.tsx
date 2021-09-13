@@ -6,7 +6,7 @@ import { Address, isAddress } from "../types/address"
 
 const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
 
-export class Web3Store {
+export class Web3StoreClass {
   private modal: Web3Modal
 
   public injected = observable<ethers.providers.Web3Provider | undefined>(undefined)
@@ -41,4 +41,9 @@ export class Web3Store {
     // TODO: Validate nework of provider
     this.injected.set(new ethers.providers.Web3Provider(provider))
   }
+}
+
+export const Web3Store = {
+  constructor: Web3StoreClass,
+  tag: 'web3store'
 }

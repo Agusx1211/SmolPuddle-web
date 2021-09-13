@@ -1,4 +1,0 @@
-{
-  "ENV": "prod",
-  "SERVICE_WORKER": true
-}

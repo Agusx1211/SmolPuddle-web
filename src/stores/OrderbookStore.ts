@@ -1,5 +1,4 @@
 
-import { Web3Provider } from "@ethersproject/providers"
 import { ethers } from "ethers"
 import { Store } from "."
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
@@ -19,7 +18,7 @@ export type StoredOrder = {
 
 export const REBROADCAST_WINDOW = 30
 
-export class OrderbookStore {
+export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
   public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders", [])
@@ -116,4 +115,9 @@ export class OrderbookStore {
 
     this.broadcast()
   }
+}
+
+export const OrderbookStore = {
+  constructor: OrderbookStoreClass,
+  tag: 'orderbookstore'
 }

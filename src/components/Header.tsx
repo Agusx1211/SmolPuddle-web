@@ -71,7 +71,7 @@ export function Header() {
       <Container className={classes.container}>
         <Grid container spacing={2} justifyContent="center">
           <Grid item>
-            <img src={Smol} height={100}></img>
+            <img src={Smol} height={100} alt=""></img>
             <Typography className={classes.title} variant="h2" align="center" color="textPrimary" gutterBottom>
               Smol Puddle
             </Typography>
