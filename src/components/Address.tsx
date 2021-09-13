@@ -5,6 +5,7 @@ import { useObservable, useStore } from "../stores"
 import { NftStore } from "../stores/NftStore"
 import { set } from "../utils"
 import { Loading } from "./commons/Loading"
+import { Page, Paginator } from "./commons/Paginator"
 import { ItemCard } from "./ItemCard"
 
 export function Address() {
@@ -12,6 +13,7 @@ export function Address() {
 
   const nftStore = useStore(NftStore)
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState<Page>()
 
   const itemsOfOwner = useObservable(nftStore.nftsOf(address))
   const collections = useMemo(() => set(itemsOfOwner?.map((i) => i.collection) ?? []), [itemsOfOwner])
@@ -27,7 +29,7 @@ export function Address() {
     collections.map((c) => nftStore.fetchCollectionInfo(c))
   }, [collections, nftStore])
 
-  console.log("items of owner", itemsOfOwner)
+  const sliced = useMemo(() => itemsOfOwner?.slice(page?.start, page?.end) ?? [], [page, itemsOfOwner])
 
   return <Container>
     <Grid
@@ -37,10 +39,11 @@ export function Address() {
       justifyContent="center"
       alignItems="center"
     >
-      { itemsOfOwner && itemsOfOwner.slice(0, 25).map((item) => <Grid item xs>
+      { sliced && sliced.map((item) => <Grid item xs>
         <ItemCard key={`item${item}`} collection={item.collection} id={item.id} />
       </Grid>)}
     </Grid>
     <Loading loading={loading} />
+    <Paginator total={itemsOfOwner?.length ?? 0} onPage={setPage} />
   </Container>
 }
