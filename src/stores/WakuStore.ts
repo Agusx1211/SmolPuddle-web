@@ -4,7 +4,7 @@ import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
 import { Store } from './'
 
 export const WakuTopics = {
-  SmolPuddleMessage: `/smolpuddledev/1/order`
+  SmolPuddleMessage: `/smolpuddle-dev/1/order`
 }
 
 type WakuObserver = {
@@ -65,7 +65,7 @@ export class WakuStoreClass {
       const bootNodes = await getStatusFleetNodes()
       await Promise.all(bootNodes.map(async (n: string) => {
         try {
-          console.log("connect to", n)
+          console.debug("connect to", n)
           await waku.dial(n)
         } catch (e) {
           console.warn("error connecting to peer", n, e)
@@ -97,7 +97,7 @@ export class WakuStoreClass {
 
         // Ignore message if it doesn't follow format
         if (!IsMessageBase(content)) {
-          console.log('bad message body', msg)
+          console.debug('bad message body', msg)
           return
         }
 
@@ -115,8 +115,6 @@ export class WakuStoreClass {
   }
 
   sendMsg = async (rmsg: Omit<WakuMessageBase, keyof WakuMessageInternal> | WakuMessageBase) => {
-    console.log("pre sending message", rmsg)
-
     try {
       const msg = rmsg as WakuMessageBase
 
@@ -127,7 +125,7 @@ export class WakuStoreClass {
 
       if (!this.waku) {
         this.messageQueue.push(msg)
-        console.log("stored in queue")
+        console.debug("store in queue", msg)
         return
       }
 
@@ -136,7 +134,7 @@ export class WakuStoreClass {
 
       const json = JSON.stringify(msg)
       const wmgs = await WakuMessage.fromUtf8String(json, topic)
-      console.log("sending message", json, wmgs)
+      console.debug("dispatch message", json, wmgs)
       await this.waku.relay.send(wmgs)
     } catch (e) {
       console.error('error sending waku message', e)
@@ -154,7 +152,7 @@ export class WakuStoreClass {
   }
 
   dispatchQueue = () => {
-    console.log("dispatching queue")
+    console.debug("dispatching waku queue")
     this.messageQueue.forEach(msg => this.sendMsg(msg))
     this.messageQueue = []
   }
