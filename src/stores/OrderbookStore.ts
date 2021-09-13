@@ -63,6 +63,7 @@ export class OrderbookStoreClass {
     })
 
     this.broadcast()
+    this.refreshStatus(...this.orders.get().map((o) => o.order))
   }
 
   listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {

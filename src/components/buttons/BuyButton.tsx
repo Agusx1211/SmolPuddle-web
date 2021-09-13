@@ -20,7 +20,7 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
 
   const account = useObservable(web3Store.account)
 
-  const buy = () => {
+  const buy = async () => {
     if (!order) return console.warn("no order found")
 
     const signer = web3Store.injected.get()?.getSigner()
@@ -30,7 +30,8 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
     }
 
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
-    contract.swap(orderAbiEncode(order), order.signature, { value: ethers.BigNumber.from(order.ask.amountOrId).toString() }).then((tx: ethers.providers.TransactionResponse) => {
+
+    contract.swap(orderAbiEncode(order), ethers.utils.arrayify(order.signature), { value: ethers.BigNumber.from(order.ask.amountOrId) }).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)
       notificationsStore.notify(buildTxNotif(tx))
       tx.wait().then(() => {

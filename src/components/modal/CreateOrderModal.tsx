@@ -15,7 +15,7 @@ import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStor
 
 export function isSupportedOrder(order: Order): boolean {
   return (
-    order.currency === Currency.Ask &&
+    order.currency === Currency.SellNFT &&
     order.ask.token === DefaultAskCurrency
   )
 }
@@ -121,14 +121,13 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
           token: collection,
           amountOrId: ethers.BigNumber.from(id)
         },
-        currency: Currency.Ask,
+        currency: Currency.SellNFT,
         fees: [],
         expiration: ethers.BigNumber.from("18446744073709551615"), // never
       })
 
       // Sign order
-      // TODO: Should add more info to sign, contract addr, chainId and some string
-      const signature = `${await injected.getSigner().signMessage(order.hash)}02`
+      const signature = `${await injected.getSigner().signMessage(ethers.utils.arrayify(order.hash))}02`
       const signedOrder = attachSignature(order, signature)
 
       // Broadcast order

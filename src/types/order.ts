@@ -15,9 +15,10 @@ export const OrderAbiType = `tuple(
 )`
 
 export const Currency = {
-  Ask: 0,
-  Sell: 1,
-  Nonce: 2
+  Invalid: 0,
+  NftToNft: 1,
+  BuyNFT: 2,
+  SellNFT: 3
 }
 
 export function orderAbiEncode(order: OrderConstructor) {
@@ -36,7 +37,7 @@ export function orderAbiEncode(order: OrderConstructor) {
 }
 
 export const EIP712Header = Buffer.from('1901', 'hex')
-export const DomainHash = "0x6939e60974fbc347aa561478a71c96a18a5e4aad9056b6525a6ad62752877099"
+export const DomainHash = "0x14c3299708bbadb2b92f015adeee070599f6a05570b7711a0e8b3c4be7c4f90a"
 export const OrderTypehash = "0x2fbfd17f75c3304428e25fe283d35e4b98b85e5a42064810e0ab9627a545e058"
 
 export function orderHash(order: OrderConstructor): string {

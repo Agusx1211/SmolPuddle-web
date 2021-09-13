@@ -1,3 +1,6 @@
+import { ethers } from "ethers"
+import { SmolPuddleAbi } from "./abi/SmolPuddle"
+import { SmolPuddleContract } from "./constants"
 
 export function safe<T>(f: () => T): T | undefined {
   try {
@@ -20,8 +23,15 @@ export function capitalize(string: string) {
   return string.slice(0, 1).toUpperCase() + string.slice(1)
 }
 
+const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi)
+
 export function parseError(e: any): string {
   if (e.data && e.data.message && typeof e.data.message === 'string') {
+    try {
+      if (e.data.data) {
+        return `${capitalize(e.data.message)} - ${contract.interface.getError(e.data.data).name}`
+      }
+    } catch {}
     return capitalize(e.data.message)
   }
 
