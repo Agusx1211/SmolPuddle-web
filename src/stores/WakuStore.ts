@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
+import { getBootstrapNodes, Waku, WakuMessage } from 'js-waku'
 
 import { Store } from './'
 
@@ -60,16 +60,24 @@ export class WakuStore {
   connect = async (): Promise<void> => {
     if (this.waku === undefined) {
       // Start waku
-      const waku = await Waku.create()
-      const bootNodes = await getStatusFleetNodes()
-      await Promise.all(bootNodes.map(async (n: string) => {
-        try {
-          console.log("connect to", n)
-          await waku.dial(n)
-        } catch (e) {
-          console.warn("error connecting to peer", n, e)
-        }
-      }))
+      let waku: Waku
+
+      try {
+        waku = await Waku.create({
+          libp2p: {
+            config: {
+              pubsub: {
+                enabled: true,
+                emitSelf: true,
+              },
+            },
+          },
+          bootstrap: getBootstrapNodes.bind({}, ['fleets', 'wakuv2.prod', 'waku-websocket']),
+        })
+      } catch (e) {
+        console.log('Issue starting waku ', e)
+        return
+      }
 
       this.waku = waku
 
@@ -143,8 +151,8 @@ export class WakuStore {
   }
 
   initWaku = () => {
-    this.listen()
-    this.dispatchQueue()
+    // this.listen()
+    // this.dispatchQueue()
 
     setTimeout(() => {
       console.log("call connect")
@@ -184,8 +192,7 @@ export class WakuStore {
     this.waku.relay.addObserver(callback, [topic])
 
     try {
-      await this.waku.store.queryHistory({
-        contentTopics: [topic],
+      await this.waku.store.queryHistory([topic], {
         callback: (msgs: WakuMessage[]) => {
           this.messages.push(...msgs)
           this.callCallbacks(this.callbacks, ...msgs)
