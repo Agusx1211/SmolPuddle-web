@@ -1,4 +1,3 @@
-import React from 'react'
 import { Container, Grid, makeStyles, Typography } from "@material-ui/core"
 import { useEffect } from "react"
 import { useParams } from "react-router"
@@ -20,6 +19,7 @@ const useStyles = makeStyles((theme) => ({
   },
   nftImage: {
     width: '100%',
+    height: 'auto',
     margin: theme.spacing(2)
   }
 }))
@@ -55,11 +55,11 @@ export function View() {
       alignItems="flex-start"
       spacing={1}
     >
-      <Grid container item xs>
+      <Grid container item md>
       { !(itemMetadata?.image) && <Skeleton className={classes.nftImage} variant="rect" height={700}/> }
-        { itemMetadata?.image && <img className={classes.nftImage} height={700} src={itemMetadata.image} alt={itemMetadata.name}></img> }
+        { itemMetadata?.image && <img className={classes.nftImage} src={itemMetadata.image} alt={itemMetadata.name}></img> }
       </Grid>
-      <Grid container item md={7}>
+      <Grid container item md>
         <Typography className={classes.nftTitle} variant="h4" color="textSecondary" align="left">
           { name ? name : <Skeleton width={400} />}
         </Typography>
