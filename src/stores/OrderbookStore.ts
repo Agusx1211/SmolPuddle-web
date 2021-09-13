@@ -7,6 +7,7 @@ import { SmolPuddleContract } from "../constants"
 import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
 import { safe } from "../utils"
+import { CollectionsStore } from "./CollectionsStore"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
@@ -16,7 +17,7 @@ export type StoredOrder = {
   lastSeen: number
 }
 
-export const REBROADCAST_WINDOW = 24 * 60 * 1000
+export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
 
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
@@ -77,6 +78,7 @@ export class OrderbookStoreClass {
   addOrder = (order: Order, broadcast: boolean = false) => {
     if (broadcast) this.store.get(WakuStore).sendMsg([order], isOrderArray)
 
+    this.store.get(CollectionsStore).saveCollection(order.sell.token)
     this.knownOrders.update((known) => {
       const now = new Date().getTime()
       const index = known.findIndex((o) => o.order.hash === order.hash)

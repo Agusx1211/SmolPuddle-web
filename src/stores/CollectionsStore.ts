@@ -3,6 +3,7 @@ import { observable } from "micro-observables"
 import { Store } from "."
 import { ERC721Abi } from "../abi/ERC721"
 import { Address, parseAddress } from "../types/address"
+import { set } from "../utils"
 import { LocalStore } from "./LocalStore"
 import { Web3Store } from "./Web3Store"
 
@@ -22,10 +23,10 @@ export class CollectionsStoreClass {
     const addr = parseAddress(collection)
     if (addr === undefined) return
 
-    this.knownCollections.update((known) => known.includes(addr) ? known : [...known, addr])
+    this.knownCollections.update((known) => set([...known, addr]))
   }
 
-  fetchCollectionItems = (collection: string, force: boolean = false) => {
+  fetchCollectionItems = async (collection: string, force: boolean = false) => {
     const addr = parseAddress(collection)
     if (addr === undefined) return console.warn("invalid address")
 
@@ -38,18 +39,19 @@ export class CollectionsStoreClass {
     const provider = this.store.get(Web3Store).provider.get()
     const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
 
-    contract.totalSupply().then((totalSupply: ethers.BigNumber) => {
+    try {
+      const totalSupply = await contract.totalSupply()
       const psupply = totalSupply.toNumber()
       const supply = Math.min(psupply, 20000)
       if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
-
+  
       this.allItemsOfCollection.update((all) => {
         all[addr] = new Array(totalSupply.toNumber()).fill(0).map((_, i) => i)
         return Object.assign({}, all)
       })
-    }).catch((e: any) => {
+    } catch (e) {
       console.warn("error loading total supply", addr, e)
-    })
+    }
   }
 }
 

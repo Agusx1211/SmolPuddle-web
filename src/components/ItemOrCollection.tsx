@@ -1,4 +1,3 @@
-import React from 'react'
 import { ethers } from "ethers"
 import { useParams } from "react-router-dom"
 import { parseAddress } from "../types/address"
@@ -13,7 +12,6 @@ export function ItemOrCollection() {
   const sid = safe(() => ethers.BigNumber.from(id))
   const scollection = parseAddress(collection)
 
-  console.log(sid)
   // TODO: Use props for views and collection
   return <>
     { sid && <View />}

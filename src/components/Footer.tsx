@@ -24,9 +24,9 @@ const authors = ([
   "Agusx1211",
   "PhABCD",
   "Peterk",
-  "",
   "_kevcas"
 ]).map((c) => ({ c: c, r: Math.random() })).sort((a, b) => a.r - b.r).map((c) => c.c)
+const spacedAuthors = [...authors.slice(0, 3), "", authors[3]]
 
 export function Footer() {
   const classes = useStyles()
@@ -37,7 +37,7 @@ export function Footer() {
     <Typography variant="subtitle1" align="center" color="textSecondary" gutterBottom>
       <Grid container spacing={1} justifyContent="center">
         <Grid item>Made with love by</Grid>
-        {authors.map((c) => {
+        {spacedAuthors.map((c) => {
           if (c === '') return <Grid item key={`space`}>{"&"}</Grid>
           return <Grid item key={`author-${c}`}>
             <Link key={`a1`} color="inherit" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/${c}`}>@{c}</Link>

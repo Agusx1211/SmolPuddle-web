@@ -45,8 +45,6 @@ export function View() {
     nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
 
-  console.log("show skeleton", !(itemMetadata?.image))
-
   return <Container>
     <Grid
       container

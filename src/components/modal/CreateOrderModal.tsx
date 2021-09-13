@@ -96,7 +96,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
     }
 
     if (!isApproved) {
-      const contract = new ethers.Contract(collection, ERC721Abi).connect(provider.getSigner())
+      const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
       contract.setApprovalForAll(SmolPuddleContract, true).then((tx: ethers.providers.TransactionResponse) => {
         setPending(true)
         tx.wait().then((receipt) => {

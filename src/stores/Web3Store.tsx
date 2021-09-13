@@ -3,6 +3,7 @@ import { Observable } from "micro-observables"
 import Web3Modal from "web3modal"
 import { observable, Store } from "."
 import { Address, isAddress } from "../types/address"
+import { providers } from "@0xsequence/multicall"
 
 const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
 
@@ -13,7 +14,7 @@ export class Web3StoreClass {
   public accounts = observable<Address[] | undefined>(undefined)
 
   public account: Observable<string | undefined>
-  public provider: Observable<ethers.providers.JsonRpcProvider | ethers.providers.Web3Provider>
+  public provider: Observable<providers.MulticallProvider | ethers.providers.Web3Provider>
 
   constructor(private store: Store) {
     this.modal = new Web3Modal({
@@ -33,7 +34,9 @@ export class Web3StoreClass {
     })
 
     this.account = this.accounts.select((a) => a ? a[0] : undefined)
-    this.provider = this.injected.select((injected) => injected ? injected : new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))  
+
+    const provider = new providers.MulticallProvider(new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
+    this.provider = this.injected.select((injected) => injected ? injected : provider)  
   }
 
   async connect() {
