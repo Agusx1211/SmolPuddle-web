@@ -4,7 +4,7 @@ import { observable } from 'micro-observables'
 import { Store } from './'
 
 export const WakuTopics = {
-  SmolPuddleMessage: `/smolpuddle-dev-8/1/order`
+  SmolPuddleMessage: `/smolpuddle-dev-9/1/order`
 }
 
 type WakuObserver = {
