@@ -39,8 +39,8 @@ export function Address() {
       justifyContent="center"
       alignItems="center"
     >
-      { sliced && sliced.map((item) => <Grid item xs>
-        <ItemCard key={`item${item}`} collection={item.collection} id={item.id} />
+      { sliced && sliced.map((item) => <Grid key={`item-${item.collection}-${item.id}`} item xs>
+        <ItemCard collection={item.collection} id={item.id} />
       </Grid>)}
     </Grid>
     <Loading loading={loading} />

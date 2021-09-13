@@ -13,6 +13,7 @@ import { SellButton } from "./buttons/SellButton"
 
 const useStyles = makeStyles((theme) => ({
   root: {
+    margin: 'auto',
     width: 345,
     height: 600,
     display: 'flex',

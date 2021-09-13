@@ -91,11 +91,6 @@ export function Header() {
                 Listings
               </Button>
             </Grid>
-            <Grid item>
-              <Button onClick={() => history.push('/sell') } variant="outlined" color="primary">
-                Sell
-              </Button>
-            </Grid>
             { account && <Grid item>
               <Button onClick={() => history.push(`/address/${account}`) } variant="outlined" color="primary">
                 My NFTs
