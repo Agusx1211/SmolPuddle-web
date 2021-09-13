@@ -64,7 +64,7 @@ export function Collection(props: any) {
       justifyContent="center"
       alignItems="center"
     >
-      { sliced.map((item) => <Grid key={`citem-${item.id}`} item xs>
+      { sliced.map((item) => <Grid key={`citem-${item.id}`} item  md={4}>
         <ItemCard key={`item${item}`} collection={collection} id={item.id} />
       </Grid>)}
     </Grid>

@@ -36,8 +36,8 @@ export function Listings() {
       justifyContent="center"
       alignItems="center"
     >
-    { sliced.length === 0 && <div>No listings found</div>}
-    { sliced && sliced.map((listing, i) => <Grid key={`listing-${i}-${listing.order.hash}`}  item xs>
+    { (!wakuLoaded && sliced.length === 0) && <div>No listings found</div>}
+    { sliced && sliced.map((listing, i) => <Grid key={`listing-${i}-${listing.order.hash}`} item md={4}>
       <ItemCard collection={listing.order.sell.token} id={listing.order.sell.amountOrId} />
     </Grid>)}
   </Grid>

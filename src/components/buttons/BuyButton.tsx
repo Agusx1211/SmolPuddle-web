@@ -29,7 +29,7 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
     }
 
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
-    contract.swap(orderAbiEncode(order), order.signature).then((tx: ethers.providers.TransactionResponse) => {
+    contract.swap(orderAbiEncode(order), order.signature, { value: ethers.BigNumber.from(order.ask.amountOrId).toString() }).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)
       tx.wait().then(() => {
         orderbookStore.refreshStatus(order).then(() => {
@@ -40,7 +40,7 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
   }
 
   return <>
-  { (order && order.seller !== account) && <Button variant={variant} disabled={pending} size="small" color="primary" onClick={buy}>
+  { (order && order.seller !== account) && <Button variant={variant} disabled={pending} disableElevation color="primary" onClick={buy}>
     { pending ? 'Buying...' : 'Buy' } - {ethers.utils.formatEther(order.ask.amountOrId)} ETH
   </Button> }
   </>

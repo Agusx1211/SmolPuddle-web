@@ -39,7 +39,8 @@ export function Address() {
       justifyContent="center"
       alignItems="center"
     >
-      { sliced && sliced.map((item) => <Grid key={`item-${item.collection}-${item.id}`} item xs>
+      { (!loading && sliced.length === 0) && <div>This address has no NFTs :(</div>}
+      { sliced && sliced.map((item) => <Grid key={`item-${item.collection}-${item.id}`} item md={4}>
         <ItemCard collection={item.collection} id={item.id} />
       </Grid>)}
     </Grid>

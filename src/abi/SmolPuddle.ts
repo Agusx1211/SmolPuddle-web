@@ -91,7 +91,7 @@ export const SmolPuddleAbi = [
     ],
     "name": "swap",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

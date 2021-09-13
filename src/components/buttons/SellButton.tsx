@@ -24,7 +24,7 @@ export function SellButton(props: { collection: Address, id: ethers.BigNumberish
   const isOwner = account !== undefined && account === itemOwner
 
   return <>
-  { (isOwner && !listing) && <Button variant={variant} size="small" color="primary" onClick={() => createOrderStore.openCreateOrder({ collection, id })}>
+  { (isOwner && !listing) && <Button variant={variant} disableElevation color="primary" onClick={() => createOrderStore.openCreateOrder({ collection, id })}>
     Sell
   </Button> }
   </>

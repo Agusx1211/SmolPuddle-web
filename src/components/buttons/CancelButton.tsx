@@ -37,7 +37,7 @@ export function CancelButton(props: { order?: Order, variant: 'text' | 'outlined
   }
 
   return <>
-  { (order && account && order.seller === account) && <Button variant={variant} disabled={pending} size="small" color="primary" onClick={cancel}>
+  { (order && account && order.seller === account) && <Button variant={variant} disabled={pending} disableElevation color="primary" onClick={cancel}>
     { pending ? 'Canceling...' : 'Cancel' } - {ethers.utils.formatEther(order.ask.amountOrId)} ETH
   </Button> }
   </>

@@ -63,6 +63,7 @@ export function Header() {
 
   const web3store = useStore(Web3Store)
   const account = useObservable(web3store.account)
+  const rightChain = useObservable(web3store.rightChain)
 
   const isMain = location.pathname === '' || location.pathname === '/'
 
@@ -79,13 +80,11 @@ export function Header() {
         </Grid>
         <div className={classes.headButtons}>
           <Grid container spacing={2} justifyContent="center">
-            <Grid item>
-              { !isMain &&
-                <Button onClick={() => history.push('/') } >
-                  <ArrowBackIcon color="primary" />
-                </Button>
-              }
-            </Grid>
+            { !isMain && <Grid item>
+              <Button onClick={() => history.push('/') } >
+                <ArrowBackIcon color="primary" />
+              </Button>
+            </Grid> }
             <Grid item>
               <Button onClick={() => history.push('/') } variant="outlined" color="primary">
                 Listings
@@ -97,8 +96,8 @@ export function Header() {
               </Button>
             </Grid> }
             <Grid item>
-             <Button onClick={() => web3store.connect() } variant="outlined" color="primary">
-                { account ? `Disconnect ${shortAddress(account)}` : 'Connect'}
+             <Button onClick={() => account ? web3store.disconnect() : web3store.connect() } variant="outlined" color={ rightChain || !account ? 'primary' : 'secondary' }>
+                { account ? rightChain ? `Disconnect ${shortAddress(account)}` : 'Wrong network' : 'Connect'}
               </Button>
             </Grid>
           </Grid>

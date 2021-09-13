@@ -14,7 +14,7 @@ import { SellButton } from "./buttons/SellButton"
 const useStyles = makeStyles((theme) => ({
   root: {
     margin: 'auto',
-    width: 345,
+    maxWidth: 345,
     height: 600,
     display: 'flex',
     flexDirection: 'column'
@@ -77,7 +77,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
       <CancelButton order={listing?.order} variant="text" />
       <SellButton collection={collection} id={id} variant="text" />
       <BuyButton order={listing?.order} variant="contained" />
-      <Button size="small" color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
+      <Button disableElevation color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
         View
       </Button>
     </CardActions>

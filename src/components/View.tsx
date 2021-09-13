@@ -45,6 +45,8 @@ export function View() {
     nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
 
+  const collectionName = metadata?.collection ? `${metadata?.collection?.name} (${metadata?.collection?.symbol})`: collection
+
   return <Container>
     <Grid
       container
@@ -65,10 +67,10 @@ export function View() {
           {itemMetadata ? itemMetadata.description : <Skeleton variant="rect" height={300} width={600} />}
         </Typography>
         <Typography className={classes.nftDescription} color="textSecondary" align="left">
-          Owner: {itemOwner}
+          Owner: { itemOwner ? <Link to={`/address/${itemOwner}`}>{itemOwner}</Link> : <Skeleton width={400} /> }
         </Typography>
         <Typography className={classes.nftDescription}  color="textSecondary">
-          Collection: <Link to={`/${collection}`}>{metadata?.collection?.name} ({metadata?.collection?.symbol})</Link>
+          Collection: <Link to={`/${collection}`}>{collectionName}</Link>
         </Typography>
         <Grid
           className={classes.nftDescription}
