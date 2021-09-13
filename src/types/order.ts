@@ -91,7 +91,8 @@ export type Order = {
 
 export function isOrder(cand: any): cand is Order {
   return (
-    cand && cand.hash && typeof cand.hash === 'string'
+    cand &&
+    cand.hash && typeof cand.hash === 'string' && cand.hash !== ''
   )
 }
 

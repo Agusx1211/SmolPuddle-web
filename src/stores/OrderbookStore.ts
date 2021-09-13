@@ -16,7 +16,7 @@ export type StoredOrder = {
   lastSeen: number
 }
 
-export const REBROADCAST_WINDOW = 30
+export const REBROADCAST_WINDOW = 30 * 1000
 
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
@@ -39,13 +39,14 @@ export class OrderbookStoreClass {
     this.store.get(WakuStore).onEvent({
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
+        console.log("found orders", orders)
         orders.forEach((order) => {
           // Add to list of known orders
           // TODO: let's do some sanity checks first (to avoid flooding)
           // ideas:
           //        check if seller has token, sanity check amounts, check isApproved
           //        put a limit of orders per-seller, check if seller has balance, etc
-          if (orderHash(order) !== order.hash) {
+          if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
             console.info('Drop order', order, 'invalid hash')
             return
           }
@@ -74,7 +75,7 @@ export class OrderbookStoreClass {
   })
 
   addOrder = (order: Order, broadcast: boolean = false) => {
-    if (broadcast) this.store.get(WakuStore).sendMsg([order])
+    if (broadcast) this.store.get(WakuStore).sendMsg([order], isOrderArray)
 
     this.knownOrders.update((known) => {
       const now = new Date().getTime()
@@ -91,8 +92,19 @@ export class OrderbookStoreClass {
   broadcast = async () => {
     const now = new Date().getTime()
     const orders = this.orders.get()
+
     const notSeenInWindow = orders.filter((o) => now - o.lastSeen > REBROADCAST_WINDOW)
-    this.store.get(WakuStore).sendMsg(notSeenInWindow)
+
+    if (notSeenInWindow.length > 0) {
+      this.store.get(WakuStore).sendMsg(notSeenInWindow.map((o) => o.order), isOrderArray)
+      this.knownOrders.update((known) => {
+        known.forEach((o, i) => {
+          const found = notSeenInWindow.find((nt) => nt.order.hash === o.order.hash)
+          if (found) known[i].lastSeen = now
+        })
+        return [...known]
+      })
+    }
   }
 
   refreshStatus = async (...orders: Order[]) => {

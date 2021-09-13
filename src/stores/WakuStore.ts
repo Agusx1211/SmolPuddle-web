@@ -1,10 +1,9 @@
-import { ethers } from 'ethers'
 import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
 
 import { Store } from './'
 
 export const WakuTopics = {
-  SmolPuddleMessage: `/smolpuddle-dev/1/order`
+  SmolPuddleMessage: `/smolpuddle-dev-2/1/order`
 }
 
 type WakuObserver = {
@@ -12,35 +11,9 @@ type WakuObserver = {
   topics: string[]
 }
 
-export type WakuMessageInternal = {
-  timestamp: number
-  salt: string
-  sender: string
-}
-
-export type WakuMessageBase = WakuMessageInternal
-
-export const IsMessageBase = (cand: any): cand is WakuMessageBase => {
-  return (
-    cand &&
-    cand.type &&
-    typeof cand.type === 'string' &&
-    cand.type !== '' &&
-    cand.timestamp &&
-    typeof cand.timestamp === 'number' &&
-    cand.timestamp > 0 &&
-    cand.salt &&
-    typeof cand.salt === 'string' &&
-    cand.salt !== '' &&
-    cand.sender &&
-    typeof cand.sender === 'string' &&
-    ethers.utils.isAddress(cand.sender)
-  )
-}
-
-export type WakuCallback<T extends WakuMessageBase> = {
+export type WakuCallback<T> = {
   callback: (event: T) => void
-  isEvent: (cand: WakuMessageBase & Partial<T>) => cand is T
+  isEvent: (cand: Partial<T>) => cand is T
 }
 
 export class WakuStoreClass {
@@ -51,7 +24,7 @@ export class WakuStoreClass {
   public messages: WakuMessage[] = []
   public callbacks: WakuCallback<any>[] = []
 
-  public messageQueue: WakuMessageBase[] = []
+  public messageQueue: any[] = []
 
   constructor(private store: Store) {
     this.initWaku()
@@ -96,10 +69,10 @@ export class WakuStoreClass {
         const content = JSON.parse(msg.payloadAsUtf8)
 
         // Ignore message if it doesn't follow format
-        if (!IsMessageBase(content)) {
-          console.debug('bad message body', msg)
-          return
-        }
+        // if (!IsMessageBase(content)) {
+        //   console.debug('bad message body', content)
+        //   return
+        // }
 
         console.debug('Received message', content)
 
@@ -114,15 +87,21 @@ export class WakuStoreClass {
     })
   }
 
-  sendMsg = async (rmsg: Omit<WakuMessageBase, keyof WakuMessageInternal> | WakuMessageBase) => {
+  sendMsg = async <T>(msg: T, isMsg: (cand: Partial<T>) => cand is T) => {
     try {
-      const msg = rmsg as WakuMessageBase
-
-      if (msg.timestamp === undefined || msg.timestamp === 0) {
-        msg.timestamp = new Date().getTime()
-        msg.salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
+      if (!isMsg(msg)) {
+        console.warn("drop waku msg, invalid msg body", msg)
+        return
       }
 
+      this.sendMsgInternal(msg)
+    } catch (e) {
+      console.error('error sending waku message', e)
+    }
+  }
+
+  private sendMsgInternal = async <T>(msg: T) => {
+    try {
       if (!this.waku) {
         this.messageQueue.push(msg)
         console.debug("store in queue", msg)
@@ -130,7 +109,6 @@ export class WakuStoreClass {
       }
 
       const topic = WakuTopics.SmolPuddleMessage
-
 
       const json = JSON.stringify(msg)
       const wmgs = await WakuMessage.fromUtf8String(json, topic)
@@ -153,7 +131,7 @@ export class WakuStoreClass {
 
   dispatchQueue = () => {
     console.debug("dispatching waku queue")
-    this.messageQueue.forEach(msg => this.sendMsg(msg))
+    this.messageQueue.forEach(msg => this.sendMsgInternal(msg))
     this.messageQueue = []
   }
 
