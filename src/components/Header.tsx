@@ -11,11 +11,13 @@ import { useObservable, useStore } from '../stores'
 import { Web3Store } from '../stores/Web3Store'
 import { shortAddress } from '../types/address'
 import Smol from '../smol.png'
+import { ToggleTheme } from './ToggleMode'
 
 const useStyles = makeStyles((theme) => ({
   head: {
     backgroundColor: theme.palette.background.paper,
-    padding: theme.spacing(8, 0, 6)
+    padding: theme.spacing(8, 0, 6),
+    textAlign: 'center'
   },
   container: {
     maxWidth: 660
@@ -54,6 +56,11 @@ const useStyles = makeStyles((theme) => ({
       },
     },
   },
+  topActions: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end'
+  }
 }))
 
 export function Header() {
@@ -70,6 +77,9 @@ export function Header() {
   return (
     <div className={classes.head}>
       <Container className={classes.container}>
+        <div className={classes.topActions}>
+          <ToggleTheme />  
+        </div>
         <Grid container spacing={2} justifyContent="center">
           <Grid item>
             <img src={Smol} height={100} alt=""></img>

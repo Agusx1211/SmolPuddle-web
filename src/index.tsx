@@ -4,6 +4,7 @@ import './index.css'
 import App from './App'
 import reportWebVitals from './reportWebVitals'
 import { createStore, StoreProvider } from './stores'
+import { SmolPuddleThemeProvider } from './context/ThemeContext'
 
 const store = createStore()
 ;(window as any).store = store
@@ -11,7 +12,9 @@ const store = createStore()
 ReactDOM.render(
   <React.StrictMode>
     <StoreProvider store={store}>
+      <SmolPuddleThemeProvider>
       <App />
+      </SmolPuddleThemeProvider>
     </StoreProvider>
   </React.StrictMode>,
   document.getElementById('root')
