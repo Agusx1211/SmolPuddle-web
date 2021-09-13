@@ -8,6 +8,7 @@ import { createTheme, ThemeProvider } from '@material-ui/core'
 import { CreateOrderModal } from './components/modal/CreateOrderModal'
 import { ItemOrCollection } from './components/ItemOrCollection'
 import { Listings } from './components/Listings'
+import { Address } from './components/Address'
 
 const theme = createTheme({
   palette: {
@@ -26,12 +27,21 @@ function App() {
           <Header />
             <Switch>
               <Route
+                path="/address/:address"
+                strict={true}
+              >
+                <Address />
+              </Route>
+              <Route
                 path={["/:collection/:id", "/:collection"]}
                 strict={true}
               >
                 <ItemOrCollection />
               </Route>
-              <Route path="/" strict={true}>
+              <Route
+                path="/"
+                strict={true}
+              >
                 <Listings />
               </Route>
           </Switch>

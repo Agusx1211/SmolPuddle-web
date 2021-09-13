@@ -77,9 +77,9 @@ export class NftStoreClass {
       try {
         const contract = new ethers.Contract(collection, ERC721Abi).connect(provider)
         const balance = await contract.balanceOf(addr)
-        const ids = await Promise.all(new Array(balance.toNumber().fill(0).map((_: any, i: number) => {
+        const ids = await Promise.all(new Array(balance.toNumber()).fill(0).map((_: any, i: number) => {
           return contract.tokenOfOwnerByIndex(addr, i)
-        })))
+        }))
         return { collection, ids: ids as ethers.BigNumber[] }
       } catch (e: any) {
         console.warn("error reading nfts for collection", addr, collection, e)
@@ -97,7 +97,7 @@ export class NftStoreClass {
     })
   }
 
-  fetchOwnerInfo = (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false): any => {
+  fetchOwnerInfo = async (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false) => {
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
     if (addr === undefined) return
 
@@ -117,17 +117,20 @@ export class NftStoreClass {
       })
     }
 
-    contract.ownerOf(id).then((owner: string) => {
+    try {
+      const owner = await contract.ownerOf(id)
       const ownerAddr = parseAddress(owner)
       if (!ownerAddr) return console.warn("error parsing owner address", owner)
       setOwner(ownerAddr)
-    }).catch((e: any) => {
+    } catch (e: any) {
       console.warn(e)
       // TODO: This may be a real error
       // but some contracts revert when the nft is not owned
       // figure a way of differenciate
       setOwner(ethers.constants.AddressZero)
-    })
+    }
+
+    return
   }
 
   fetchCollectionInfo = (contractAddr: string, force: boolean = false) => {

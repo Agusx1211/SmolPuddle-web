@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button, Card, CardActionArea, CardActions, CardContent, CardMedia, makeStyles, Typography } from "@material-ui/core"
 import { ethers } from "ethers"
 import { useEffect } from "react"
@@ -69,7 +68,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
         { itemMetadata && <Typography variant="body2" color="textSecondary" component="p" align="left">
           {itemMetadata?.description ? `${itemMetadata.description.slice(0, 120)}...` : 'Metadata not found'}
         </Typography> }
-        { !itemMetadata && <Skeleton variant="rect" height={125} />}
+        { !itemMetadata && <Skeleton variant="rect" height={100} />}
       </CardContent>
     </CardActionArea>
     <CardActions className={classes.actions}>

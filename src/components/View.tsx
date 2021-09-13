@@ -73,16 +73,16 @@ export function View() {
           Collection: <Link to={`/${collection}`}>{metadata?.collection?.name} ({metadata?.collection?.symbol})</Link>
         </Typography>
         <Grid
+          className={classes.nftDescription}
           container
           direction="row"
           justifyContent="flex-start"
-          spacing={1}
         >
           <Grid item>
-            <CancelButton order={listing?.order} variant="text" />
+            <CancelButton order={listing?.order} variant="contained" />
           </Grid>
           <Grid item>
-            <SellButton collection={collection} id={id} variant="text" />
+            <SellButton collection={collection} id={id} variant="contained" />
           </Grid>
           <Grid item>
             <BuyButton order={listing?.order} variant="contained" />
