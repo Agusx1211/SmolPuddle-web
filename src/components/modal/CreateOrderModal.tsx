@@ -109,7 +109,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       }
 
       // Build order
-      const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
+      const salt = ethers.utils.hexlify(ethers.utils.zeroPad(ethers.utils.randomBytes(8), 32))
       const order = newOrder({
         salt,
         seller,
