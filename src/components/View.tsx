@@ -9,6 +9,7 @@ import { CancelButton } from "./buttons/CancelButton"
 import { SellButton } from "./buttons/SellButton"
 import { BuyButton } from "./buttons/BuyButton"
 import { OrderbookStore } from "../stores/OrderbookStore"
+import { Warning } from "./buttons/Warning"
 
 const useStyles = makeStyles((theme) => ({
   nftTitle: {
@@ -21,6 +22,10 @@ const useStyles = makeStyles((theme) => ({
     width: '100%',
     height: 'auto',
     margin: theme.spacing(2)
+  },
+  warn: {
+    height: 36,
+    marginLeft: theme.spacing(1)
   }
 }))
 
@@ -86,6 +91,9 @@ export function View() {
           </Grid>
           <Grid item>
             <BuyButton order={listing?.order} variant="contained" />
+          </Grid>
+          <Grid item>
+            <Warning className={classes.warn} collection={collection} />
           </Grid>
         </Grid>
       </Grid>

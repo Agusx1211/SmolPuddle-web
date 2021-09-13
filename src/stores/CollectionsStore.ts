@@ -7,12 +7,42 @@ import { set } from "../utils"
 import { LocalStore } from "./LocalStore"
 import { Web3Store } from "./Web3Store"
 
+export const TransferERC721Event = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+export const DefaultCollections = [
+  "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+  "0x71f5C328241fC3e03A8c79eDCD510037802D369c"
+]
+
+export const isDefaultCollection = (contractAddr: string) => {
+  const addr = parseAddress(contractAddr)
+  return addr ? DefaultCollections.includes(addr) : false
+}
 
 export class CollectionsStoreClass {
-  public knownCollections = new LocalStore<Address[], Address[]>("@smolpuddle.known.collections", [])
+  public savedCollections = new LocalStore<Address[], Address[]>("@smolpuddle.saved.collections", [])
   public allItemsOfCollection = observable<Record<string, number[]>>({})
+  public knownCollections = this.savedCollections.observable.select((s) => [...DefaultCollections, ...s])
 
-  constructor(private store: Store) {}
+  constructor(private store: Store) {
+    const web3store = this.store.get(Web3Store)
+    console.log("collections store create")
+    this.loadCollections(web3store.provider.get())
+  }
+
+  loadCollections = async (provider: ethers.providers.Provider) => {
+    try {
+      console.log("loading collections")
+      const block = await provider.getBlock('latest')
+      const lastBlock = ethers.BigNumber.from(block.number.toString()).sub(1024).toHexString()
+      const logs = await provider.getLogs({ fromBlock: lastBlock, toBlock: 'latest', topics: [TransferERC721Event]})
+      const erc721collections = logs.filter((l) => l.topics.length === 4)
+      console.log("got collections", set(erc721collections.map((l) => l.address)))
+      erc721collections.forEach((log) => this.saveCollection(log.address))
+    } catch (e) {
+      console.warn("error loading collections", e)
+    }
+  }
 
   itemsOfCollection = (collection: string) => this.allItemsOfCollection.select((allItems) => {
     const addr = parseAddress(collection) ?? collection
@@ -23,7 +53,7 @@ export class CollectionsStoreClass {
     const addr = parseAddress(collection)
     if (addr === undefined) return
 
-    this.knownCollections.update((known) => set([...known, addr]))
+    this.savedCollections.update((known) => set([...known, addr]))
   }
 
   fetchCollectionItems = async (collection: string, force: boolean = false) => {

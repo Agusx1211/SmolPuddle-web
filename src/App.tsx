@@ -9,6 +9,7 @@ import { CreateOrderModal } from './components/modal/CreateOrderModal'
 import { ItemOrCollection } from './components/ItemOrCollection'
 import { Listings } from './components/Listings'
 import { Address } from './components/Address'
+import { NotificationsModal } from './components/modal/NotificationsModal'
 
 const theme = createTheme({
   palette: {
@@ -23,6 +24,7 @@ function App() {
     <div className="App">
       <ThemeProvider theme={theme}>
         <CreateOrderModal />
+        <NotificationsModal />
         <HashRouter>
           <Header />
             <Switch>

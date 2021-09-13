@@ -1,4 +1,3 @@
-import React from 'react'
 import { Backdrop, Button, Fade, InputAdornment, makeStyles, Modal, TextField } from "@material-ui/core";
 import { ethers } from "ethers";
 import { useObservable, useStore } from "../../stores";
@@ -9,9 +8,10 @@ import { Web3Store } from "../../stores/Web3Store";
 import { attachSignature, Currency, newOrder, Order } from "../../types/order";
 import { OrderbookStore } from "../../stores/OrderbookStore";
 import { useEffect, useState } from "react";
-import { safe } from "../../utils";
+import { parseError, safe } from "../../utils";
 import { ERC721Abi } from "../../abi/ERC721";
 import { SmolPuddleContract } from "../../constants";
+import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore';
 
 export function isSupportedOrder(order: Order): boolean {
   return (
@@ -54,6 +54,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   const createOrderStore = useStore(CreateOrderStore)
   const web3Store = useStore(Web3Store)
   const orderBookStore = useStore(OrderbookStore)
+  const notificationsStore = useStore(NotificationsStore)
 
   const provider = useObservable(web3Store.provider)
   const account = useObservable(web3Store.account)
@@ -71,67 +72,73 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
     if (account) {
       contract.isApprovedForAll(account, SmolPuddleContract).then((isApproved: boolean) => {
         setIsApproved(isApproved)
-      }).catch((e: any) => {
-        console.error("Error loading is approved for all", e)
-      })
+      }).catch(notificationsStore.catchAndNotify)
     }
-  }, [provider, collection, account, update])
+  }, [provider, collection, account, update, notificationsStore.catchAndNotify])
 
   const handleCreateOrder = async () => {
-    // Connect to chain
-    const injected = web3Store.injected.get()
-    if (!injected) {
-      web3Store.connect()
-      return
-    }
+    try {
+      // Connect to chain
+      const injected = web3Store.injected.get()
+      if (!injected) {
+        web3Store.connect()
+        return
+      }
 
-    const seller = safe(() => web3Store.account.get())
-    if (!seller) {
-      return console.error('invalid address', seller)
-    }
+      const seller = safe(() => web3Store.account.get())
+      if (!seller) {
+        return console.error('invalid address', seller)
+      }
 
-    const ethAmount = safe(() => ethers.utils.parseEther(amount))
-    if (!ethAmount) {
-      return console.error('invalid amount', amount)
-    }
+      if (!isApproved) {
+        const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
+        contract.setApprovalForAll(SmolPuddleContract, true).then((tx: ethers.providers.TransactionResponse) => {
+          setPending(true)
+          notificationsStore.notify(buildTxNotif(tx))
+          tx.wait().then(() => {
+            setPending(false)
+            setUpdate(update + 1)
+          }).catch(notificationsStore.catchAndNotify)
+        }).catch(notificationsStore.catchAndNotify)
+        return
+      }
 
-    if (!isApproved) {
-      const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
-      contract.setApprovalForAll(SmolPuddleContract, true).then((tx: ethers.providers.TransactionResponse) => {
-        setPending(true)
-        tx.wait().then((receipt) => {
-          setPending(false)
-          setUpdate(update + 1)
-        })
+      const ethAmount = safe(() => ethers.utils.parseEther(amount))
+      if (!ethAmount || ethAmount.lte(0)) {
+        return notificationsStore.notify({ content: `Invalid amount ${amount}`, severity: 'warning' })
+      }
+
+      // Build order
+      const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
+      const order = newOrder({
+        salt,
+        seller,
+        ask: {
+          token: DefaultAskCurrency,
+          amountOrId: ethAmount
+        },
+        sell: {
+          token: collection,
+          amountOrId: ethers.BigNumber.from(id)
+        },
+        currency: Currency.Ask,
+        fees: [],
+        expiration: ethers.BigNumber.from("18446744073709551615"), // never
       })
-      return
+
+      // Sign order
+      // TODO: Should add more info to sign, contract addr, chainId and some string
+      const signature = await injected.getSigner().signMessage(order.hash)
+      const signedOrder = attachSignature(order, signature)
+
+      // Broadcast order
+      orderBookStore.addOrder(signedOrder, true)
+    } catch (e) {
+      notificationsStore.notify({
+        content: parseError(e),
+        severity: 'warning'
+      })
     }
-
-    // Build order
-    const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32))
-    const order = newOrder({
-      salt,
-      seller,
-      ask: {
-        token: DefaultAskCurrency,
-        amountOrId: ethAmount
-      },
-      sell: {
-        token: collection,
-        amountOrId: ethers.BigNumber.from(id)
-      },
-      currency: Currency.Ask,
-      fees: [],
-      expiration: ethers.BigNumber.from("18446744073709551615"), // never
-    })
-
-    // Sign order
-    // TODO: Should add more info to sign, contract addr, chainId and some string
-    const signature = await injected.getSigner().signMessage(order.hash)
-    const signedOrder = attachSignature(order, signature)
-
-    // Broadcast order
-    orderBookStore.addOrder(signedOrder, true)
   }
 
   useEffect(() => {
@@ -152,7 +159,9 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       onChange={(e) => setAmount(e.target.value)}
     />
     <div className={classes.buttons}>
-      <Button color="primary" disabled={pending} onClick={handleCreateOrder}>Create order</Button>
+      <Button color="primary" disabled={pending} onClick={handleCreateOrder}>
+        { isApproved === undefined ? '...' : isApproved ? 'Create order' : 'Approve contract' }
+      </Button>
       <Button onClick={() => createOrderStore.closeCreateOrder()}>
         Cancel
       </Button>

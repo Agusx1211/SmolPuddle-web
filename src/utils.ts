@@ -14,3 +14,15 @@ export function set<T>(arr: Array<T>): Array<T> {
 export function fallback<T>(val: T | null | undefined, def: T): T {
   return val !== null && val !== undefined ? val : def
 }
+
+export function capitalize(string: string) {
+  if (string.length === 0) return string
+  return string.slice(0, 1).toUpperCase() + string.slice(1)
+}
+
+export function parseError(e: any): string {
+  if (e.data && e.data.message && typeof e.data.message === 'string') {
+    return capitalize(e.data.message)
+  }
+  return capitalize(e.toString())
+}

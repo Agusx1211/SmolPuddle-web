@@ -10,6 +10,7 @@ import Skeleton from '@material-ui/lab/Skeleton'
 import { CancelButton } from "./buttons/CancelButton"
 import { BuyButton } from "./buttons/BuyButton"
 import { SellButton } from "./buttons/SellButton"
+import { Warning } from "./buttons/Warning"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -28,6 +29,10 @@ const useStyles = makeStyles((theme) => ({
   actions: {
     marginTop: 'auto',
     margin: theme.spacing(1)
+  },
+  warn: {
+    marginLeft: 'auto!important',
+    height: 36
   }
 }))
 
@@ -80,6 +85,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
       <Button disableElevation color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
         View
       </Button>
+      <Warning className={classes.warn} collection={collection} />
     </CardActions>
   </Card>
 }

@@ -6,6 +6,7 @@ import { Address, isAddress } from "../types/address"
 import { providers } from "@0xsequence/multicall"
 import WalletConnectProvider from "@walletconnect/web3-provider"
 
+export const ARBITRUM_EXPLORER = "https://arbiscan.io/"
 export const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
 export const ARBITRUM_CHAIN_ID = 42161
 
@@ -60,7 +61,9 @@ export class Web3StoreClass {
     this.account = this.accounts.select((a) => a ? a[0] : undefined)
 
     const provider = new providers.MulticallProvider(new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
-    this.provider = this.injected.select((injected) => injected ? injected : provider)  
+    this.provider = this.injected.select((injected) => this.rightChain.select((isValid) => {
+      return injected && isValid ? injected : provider
+    }))  
   }
 
   async connect() {
