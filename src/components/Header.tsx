@@ -116,12 +116,12 @@ export function Header() {
       "Your little pond with NFTs on Arbitrum",
       "He's smiling at you",
       "Are EIP1155 tokens NFTs or just FTs?",
-      "Please remove CORS from your metadata, I can't read",
+      "If you are a NFT creator stop enabling CORS",
       "Powered by your browser and nothing more",
       "This orderbook uses Waku",
       "Very smol but it's here",
       "The open sea is cool, but the smol puddle is next to you",
-      "Time limited offer: 0 fees",
+      "Time limited offer: 0% fee",
       "Arbitrum Arbitrum Arbitrum"
     ]
     return all[new Date().getTime() % all.length]
