@@ -21,7 +21,10 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column'
   },
   media: {
-    height: 340
+    height: 340,
+    shapeRendering: 'optimizeSpeed',
+    textRendering: 'optimizeSpeed',
+    colorRendering: 'optimizeSpeed'
   },
   content: {
     height: 'auto'
