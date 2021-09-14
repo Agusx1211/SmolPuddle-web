@@ -26,6 +26,8 @@ export function Collection(props: any) {
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
+  const [collectionItems, setCollectionItems] = useState<number[]>([])
+  const [itemsWithOrder, setItemsWithOrder] = useState<Collectible[]>([])
   const [sortedCollection, setSortedCollection] = useState<Collectible[]>([])
   const [total, setTotal] = useState(0)
 
@@ -35,22 +37,29 @@ export function Collection(props: any) {
       .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
       .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
     ]
-    const itemsOfCollection =  all.filter((v, i) => all.indexOf(v) === i)
-    
-    const itemsWithOrders: Collectible[] = itemsOfCollection.map((i) => {
-      console.log("got listing", i)
-      const itemListing = listings.find((l) => (
-        parseAddress(l.order.sell.token) === collectionAddr &&
-        ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
-      ))
-      return { tokenId: i, order: itemListing }
-    })
-    
-    const sorted = searchStore.sortCollectibles(itemsWithOrders)
+    setCollectionItems(all.filter((v, i) => all.indexOf(v) === i))
+  }, [listings, knownItemsOfCollection])
+
+  useEffect(() => {
+    const collectionAddr = parseAddress(collection)
+    setItemsWithOrder(
+      collectionItems.map((i) => {
+        console.log("got listing", i)
+        const itemListing = listings.find((l) => (
+          parseAddress(l.order.sell.token) === collectionAddr &&
+          ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
+        ))
+        return { tokenId: i, order: itemListing }
+      })
+    )
+  }, [collection, collectionItems])
+
+  useEffect(() => {
+    const sorted = searchStore.sortCollectibles(itemsWithOrder)
     const sliced = sorted.slice(page?.start ?? 0, page?.end ?? 25)
     setSortedCollection(sliced)
     setTotal(sorted.length)
-  }, [listings, sortFilter])
+  }, [sortFilter])
 
   useEffect(() => {
     setLoading(true)
