@@ -39,6 +39,14 @@ const useStyles = makeStyles((theme) => ({
   warn: {
     marginLeft: 'auto!important',
     height: 36
+  },
+  title: {
+    wordWrap: 'break-word',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical'
   }
 }))
 
@@ -63,10 +71,16 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
   }, [nftStore, collection, id])
 
   const shortDescription = (description: string) => {
-    const maxLen = 120
+    const maxLen = 155
     if (description.length <= maxLen) return description
     return `${description.slice(0, maxLen - 3)}...`
-  } 
+  }
+  
+  const shortTitle = (title: string) => {
+    const maxLen = 35
+    if (title.length <= maxLen) return title
+    return `${title.slice(0, maxLen - 3)}...`
+  }
 
   return <Card className={classes.root}>
     <CardActionArea>
@@ -80,8 +94,8 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
         className={classes.media}
       /> }
       <CardContent>
-        <Typography gutterBottom variant="h5" component="h2" align="left">
-          { name && name } { !name && <Skeleton />}
+        <Typography className={classes.title} gutterBottom variant="h5" component="h2" align="left">
+          { name && shortTitle(name) } { !name && <Skeleton /> }
         </Typography>
         { itemMetadata && <Typography variant="body2" color="textSecondary" component="p" align="left">
           {itemMetadata?.description ? shortDescription(itemMetadata.description) : 'Metadata not found'}
