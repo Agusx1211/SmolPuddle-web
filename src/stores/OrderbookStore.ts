@@ -22,7 +22,7 @@ export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
-  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders", [])
+  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders.v2", [])
   public canceledOrders = new LocalStore<string[], string[]>("@smolpuddle.canceled.orders", [])
   public executedOrders = new LocalStore<string[], string[]>("@smolpuddle.executed.orders", [])
 

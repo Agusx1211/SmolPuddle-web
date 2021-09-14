@@ -2,9 +2,10 @@ import { ethers } from "ethers"
 import { Observable } from "micro-observables"
 import Web3Modal from "web3modal"
 import { observable, Store } from "."
-import { Address, isAddress } from "../types/address"
+import { Address, isAddress, parseAddress } from "../types/address"
 import { providers } from "@0xsequence/multicall"
 import WalletConnectProvider from "@walletconnect/web3-provider"
+import { NotificationsStore } from "./NotificationsStore"
 
 export const ARBITRUM_EXPLORER = "https://arbiscan.io/"
 export const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
@@ -76,7 +77,12 @@ export class Web3StoreClass {
 
     provider.on("accountsChanged", async (accounts: string[]) => {
       console.log("accounts changed", accounts)
-      this.accounts.set(accounts)
+      this.accounts.set(accounts.map((a) => parseAddress(a)).filter((a) => a) as string[])
+
+      this.store.get(NotificationsStore).notify({
+        content: `Account changed to ${this.account.get()}`,
+        severity: 'info'
+      })
     })
 
     provider.on("chainChanged", async (chainId: number) => {

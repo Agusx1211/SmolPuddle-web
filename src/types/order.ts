@@ -37,7 +37,7 @@ export function orderAbiEncode(order: OrderConstructor) {
 }
 
 export const EIP712Header = Buffer.from('1901', 'hex')
-export const DomainHash = "0x14c3299708bbadb2b92f015adeee070599f6a05570b7711a0e8b3c4be7c4f90a"
+export const DomainHash = "0xd8733b1f2a4937b27d9974b1f19a9255b2a718a67700d32bb2427674591c97dc"
 export const OrderTypehash = "0x2fbfd17f75c3304428e25fe283d35e4b98b85e5a42064810e0ab9627a545e058"
 
 export function orderHash(order: OrderConstructor): string {

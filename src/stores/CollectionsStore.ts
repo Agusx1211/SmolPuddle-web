@@ -22,7 +22,7 @@ export const isDefaultCollection = (contractAddr: string) => {
 export class CollectionsStoreClass {
   public savedCollections = new LocalStore<Address[], Address[]>("@smolpuddle.saved.collections", [])
   public allItemsOfCollection = observable<Record<string, number[]>>({})
-  public knownCollections = this.savedCollections.observable.select((s) => [...DefaultCollections, ...s])
+  public knownCollections = this.savedCollections.observable.select((s) => set([...DefaultCollections, ...s]))
 
   constructor(private store: Store) {
     const web3store = this.store.get(Web3Store)

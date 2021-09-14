@@ -31,6 +31,9 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
 
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
 
+    console.log("contract hash", await contract.hash(orderAbiEncode(order)))
+    console.log("og hash", order.hash)
+
     contract.swap(orderAbiEncode(order), ethers.utils.arrayify(order.signature), { value: ethers.BigNumber.from(order.ask.amountOrId) }).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)
       notificationsStore.notify(buildTxNotif(tx))

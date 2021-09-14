@@ -56,6 +56,12 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
     nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
 
+  const shortDescription = (description: string) => {
+    const maxLen = 240
+    if (description.length <= maxLen) return description
+    return `${description.slice(0, maxLen - 3)}...`
+  } 
+
   return <Card className={classes.root}>
     <CardActionArea>
       { itemMetadata && <CardMedia
@@ -72,7 +78,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
           { name && name } { !name && <Skeleton />}
         </Typography>
         { itemMetadata && <Typography variant="body2" color="textSecondary" component="p" align="left">
-          {itemMetadata?.description ? `${itemMetadata.description.slice(0, 120)}...` : 'Metadata not found'}
+          {itemMetadata?.description ? shortDescription(itemMetadata.description) : 'Metadata not found'}
         </Typography> }
         { !itemMetadata && <Skeleton variant="rect" height={100} />}
       </CardContent>

@@ -132,6 +132,14 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
 
       // Broadcast order
       orderBookStore.addOrder(signedOrder, true)
+
+      // Notificate and close window
+      notificationsStore.notify({
+        content: `Created order for ${itemMetata?.collection?.name} ${itemMetata?.item?.name}`,
+        severity: 'success'
+      })
+
+      createOrderStore.closeCreateOrder()
     } catch (e) {
       console.warn(e)
 
