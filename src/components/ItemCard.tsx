@@ -88,6 +88,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
         className={classes.media}
         image={itemMetadata.image ?? '/not-found.png'}
         title={name}
+        onClick={() => history.push(`/${collection}`)}
       /> }
       { !itemMetadata && <Skeleton
         variant="rect"
