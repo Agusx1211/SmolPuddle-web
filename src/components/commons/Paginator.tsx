@@ -33,8 +33,8 @@ export function Paginator(props: { size?: number, total: number, onPage: (event:
 
   return <Box
     style={{
-      marginTop: 24,
-      margin: 14
+      margin: 14,
+      marginTop: 24
     }}
     flexDirection="row-reverse"
   >
