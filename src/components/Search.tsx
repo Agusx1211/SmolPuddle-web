@@ -1,4 +1,4 @@
-import { Box, Container } from "@material-ui/core"
+import { Box, Container, makeStyles, Typography } from "@material-ui/core"
 import { useEffect, useMemo } from "react"
 import { useParams } from "react-router"
 import { Link } from "react-router-dom"
@@ -7,15 +7,25 @@ import { CollectionsStore } from "../stores/CollectionsStore"
 import { NftStore } from "../stores/NftStore"
 import { fuzzyEq } from "../utils"
 
+const useStyles = makeStyles((theme) => ({
+  result: {
+    textAlign: 'left',
+    margin: theme.spacing(3)
+  }
+}))
+
 export function CollectionResult(props: { collection: string }) {
+  const classes = useStyles()
   const { collection } = props
   const nftStore = useStore(NftStore)
   const metadata = useObservable(nftStore.metadataOfCollection(collection))
 
-  return <Box flexDirection='row'>
-    <Link to={`/${collection}`}>
-      {metadata?.name} ({metadata?.symbol})
-    </Link>
+  return <Box className={classes.result} flexDirection='row' justifyContent="flex-start">
+    <Typography variant="h5">
+      <Link to={`/${collection}`}>
+        {metadata?.name} ({metadata?.symbol})
+      </Link>
+    </Typography>
     <Box>Address: {collection}</Box>
   </Box>
 }

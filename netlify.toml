@@ -1,5 +1,4 @@
-[[redirects]]
-  from = "/cors-proxy/*"
-  to = ":splat"
-  status = 200
-  force = true
+[build]
+  command = "yarn run build"
+  functions = "functions"
+  publish = "dist"

@@ -1,17 +1,38 @@
 import { Store } from "."
 
 export const IpfsGateway = 'https://cloudflare-ipfs.com/ipfs/'
-export function isIpfs(uri: string): boolean {
-  return uri.startsWith('ipfs://') || (!uri.includes("http") && !uri.includes("https"))
+export function cleanHash(uri: string): string {
+  return uri.replace('ipfs://ipfs/', '').replace('ipfs://', '')
 }
+
+const PROXY = window.location.hostname === "localhost"
+  ? "https://worker.smolpuddle.io/cors-proxy/?"
+  : "https://worker.smolpuddle.io/cors-proxy/?"
+
 
 export class IpfsStoreClass {
   constructor(private store: Store) {}
 
-  mapToURI(ipfs: string): string {
-    if (!isIpfs(ipfs)) return ipfs
-    const cleanHash = ipfs.replace('ipfs://ipfs/', '').replace('ipfs://', '')
-    return `${IpfsGateway}${cleanHash}`
+  toGateway(hash: string): string {
+    return `${IpfsGateway}${hash}`
+  }
+
+  mapToURI(uri: string): string {
+    const clean = cleanHash(uri)
+
+    if (uri.startsWith('ipfs://')) {
+      return `${IpfsGateway}${clean}`
+    }
+
+    if (clean.length === 59 || clean.length === 46) {
+      return `${IpfsGateway}${clean}`
+    }
+
+    if (uri.includes('https://') || uri.includes('http://')) {
+      return `${PROXY}${uri}`
+    }
+
+    return uri
   }
 }
 

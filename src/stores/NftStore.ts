@@ -6,7 +6,7 @@ import { Address, parseAddress } from "../types/address"
 import { CollectionMetadata, isMetadata, Metadata } from "../types/metadata"
 import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
-import { IpfsStore, isIpfs } from "./IpfsStore"
+import { IpfsStore } from "./IpfsStore"
 import { Web3Store } from "./Web3Store"
 
 type ItemMetadataStorage = Record<string, Record<string, Metadata>>
@@ -14,9 +14,6 @@ type CollectionMetadataStorage = Record<string, CollectionMetadata>
 type ItemOwnersStorage = Record<string, Record<string, string | undefined>>
 type OwnedNftsStorage = Record<string, { collection: Address, id: ethers.BigNumber }[]>
 
-const PROXY = window.location.hostname === "localhost"
-  ? "http://localhost:8080"
-  : "/cors-proxy"
 
 export class NftStoreClass {
   // Maybe this shouldn't persist, or we should use indexdb
@@ -180,8 +177,7 @@ export class NftStoreClass {
     const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
 
     contract.tokenURI(id).then((uri: string) => {
-      const url = isIpfs(uri) ? this.store.get(IpfsStore).mapToURI(uri) : uri
-      fetch(`${PROXY}/${url}`).then((response) => {
+      fetch(this.store.get(IpfsStore).mapToURI(uri)).then((response) => {
         response.json().then((json) => {
           if (isMetadata(json)) {
             this.itemMetadatas.update((val) => {
