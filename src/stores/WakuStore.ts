@@ -1,4 +1,4 @@
-import { getStatusFleetNodes, Waku, WakuMessage } from 'js-waku'
+import { getBootstrapNodes, Waku, WakuMessage } from 'js-waku'
 import { observable } from 'micro-observables'
 
 import { Store } from './'
@@ -35,7 +35,7 @@ export class WakuStoreClass {
     if (this.waku.get() === undefined) {
       // Start waku
       const waku = await Waku.create()
-      const bootNodes = await getStatusFleetNodes()
+      const bootNodes = await getBootstrapNodes()
       await Promise.all(bootNodes.map(async (n: string) => {
         try {
           console.debug("connect to", n)
@@ -156,8 +156,7 @@ export class WakuStoreClass {
     waku.relay.addObserver(callback, [topic])
 
     try {
-      await waku.store.queryHistory({
-        contentTopics: [topic],
+      await waku.store.queryHistory([topic], {
         callback: (msgs: WakuMessage[]) => {
           console.log("got message from history", msgs.length)
           this.messages.push(...msgs)
