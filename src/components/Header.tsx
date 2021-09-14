@@ -91,6 +91,7 @@ export function Header() {
   const isMain = location.pathname === '' || location.pathname === '/'
   const path = history.location.pathname
 
+
   useEffect(() => {
     if (!search || search === '') {
       if (path.includes('search')) {

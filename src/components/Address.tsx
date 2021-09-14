@@ -29,7 +29,7 @@ export function Address() {
     collections.map((c) => nftStore.fetchCollectionInfo(c))
   }, [collections, nftStore])
 
-  const sliced = useMemo(() => itemsOfOwner?.slice(page?.start, page?.end) ?? [], [page, itemsOfOwner])
+  const sliced = useMemo(() => itemsOfOwner?.slice(page?.start ?? 0, page?.end ?? 25) ?? [], [page, itemsOfOwner])
 
   return <Container>
     <Grid

@@ -54,7 +54,7 @@ export function Collection(props: any) {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collectionsStore, collection, setLoading])
 
-  const sliced = useMemo(() => sorted.slice(page?.start, page?.end), [page, sorted])
+  const sliced = useMemo(() => sorted.slice(page?.start ?? 0, page?.end ?? 25), [page, sorted])
 
   return <Container>
     <Grid
