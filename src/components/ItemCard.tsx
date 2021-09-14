@@ -24,7 +24,10 @@ const useStyles = makeStyles((theme) => ({
     height: 340,
     shapeRendering: 'optimizeSpeed',
     textRendering: 'optimizeSpeed',
-    colorRendering: 'optimizeSpeed'
+    colorRendering: 'optimizeSpeed',
+    backgroundPosition: 'top',
+    backgroundSize: 'contain',
+    backgroundColor: 'gainsboro'
   },
   content: {
     height: 'auto'
