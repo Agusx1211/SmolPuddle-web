@@ -90,6 +90,9 @@ export class Web3StoreClass {
     })
 
     provider.on("networkChanged", async () => {
+      const provider = await this.modal.connect()
+      const injected = new ethers.providers.Web3Provider(provider)
+      this.injected.set(injected)
       injected.getNetwork().then((network) => {
         this.chainId.set(network.chainId)
       })
@@ -102,6 +105,27 @@ export class Web3StoreClass {
 
     this.modal.clearCachedProvider()
     this.injected.set(undefined)
+  }
+
+  async requestChainChange() {
+    const injected = this.injected.get()
+    if (!injected) return
+
+    injected.send('wallet_addEthereumChain', [{
+      chainId: ethers.BigNumber.from(ARBITRUM_CHAIN_ID).toHexString(),
+      chainName: 'Arbitrum One',
+      nativeCurrency: {
+        name: 'Ethereum',
+        symbol: 'ETH',
+        decimals: 18,
+      },
+      rpcUrls: [ARBITRUM_DEFAULT_RPC],
+      blockExplorerUrls: [ARBITRUM_EXPLORER]
+    }]).then(() => {
+      injected.send('wallet_switchEthereumChain', [{
+        chainId: ethers.BigNumber.from(ARBITRUM_CHAIN_ID).toHexString()
+      }]).catch(this.store.get(NotificationsStore).catchAndNotify)
+    }).catch(this.store.get(NotificationsStore).catchAndNotify)
   }
 }
 
