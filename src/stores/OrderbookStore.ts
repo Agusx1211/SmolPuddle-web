@@ -18,6 +18,8 @@ export type StoredOrder = {
 }
 
 export const REBROADCAST_WINDOW = 1 * 60 * 60 * 1000
+export const TmpApi = "http://143.198.178.42:80"
+// export const TmpApi = "https://server.smolpuddle.io"
 
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
@@ -65,6 +67,32 @@ export class OrderbookStoreClass {
       })
     })
 
+    fetch(`${TmpApi}/get`).then(async (response) => {
+      const orders = await response.json() as Order[]
+      const cleanOrders = orders.map((order) => {
+        // Add to list of known orders
+        // TODO: let's do some sanity checks first (to avoid flooding)
+        // ideas:
+        //        check if seller has token, sanity check amounts, check isApproved
+        //        put a limit of orders per-seller, check if seller has balance, etc
+        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
+          console.info('Drop order', order, 'invalid hash')
+          return undefined
+        }
+
+        if (!isSupportedOrder(order)) {
+          console.info('Drop unsupoted order type', order)
+          return undefined
+        }
+
+        return order
+      }).filter((o) => o !== undefined) as Order[]
+
+      const { open } = await this.filterStatus(cleanOrders)
+      console.log("got orders from api", open.length)
+      open.forEach((order) => this.addOrder(order))
+    })
+
     this.broadcast()
     this.refreshStatus(...this.orders.get().map((o) => o.order))
   }
@@ -100,6 +128,14 @@ export class OrderbookStoreClass {
     const orders = this.orders.get()
 
     const notSeenInWindow = orders.filter((o) => now - o.lastSeen > REBROADCAST_WINDOW)
+
+    fetch(`${TmpApi}/post`, {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: JSON.stringify(orders.map((o) => o.order))
+    }).catch((e) => {
+      console.warn("error calling api", e)
+    })
 
     if (notSeenInWindow.length > 0) {
       this.store.get(WakuStore).sendMsg(notSeenInWindow.map((o) => o.order), isOrderArray)

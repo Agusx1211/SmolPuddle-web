@@ -35,7 +35,9 @@ export class WakuStoreClass {
     if (this.waku.get() === undefined) {
       // Start waku
       const waku = await Waku.create()
-      const bootNodes = await getBootstrapNodes()
+      console.log(await getBootstrapNodes())
+      const bootNodes = ['/ip4/127.0.0.1/tcp/60000/p2p/16Uiu2HAmFYAcSRsbwQ7ECc9hwaT2myH1sfM7ABJinerBCY7NmRBV']
+
       await Promise.all(bootNodes.map(async (n: string) => {
         try {
           console.debug("connect to", n)
@@ -156,7 +158,7 @@ export class WakuStoreClass {
     waku.relay.addObserver(callback, [topic])
 
     try {
-      await waku.store.queryHistory([topic], {
+      await waku.store.queryHistory([topic],{
         callback: (msgs: WakuMessage[]) => {
           console.log("got message from history", msgs.length)
           this.messages.push(...msgs)
