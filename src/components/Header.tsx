@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Button from '@material-ui/core/Button'
 import Grid from '@material-ui/core/Grid'
 import Typography from '@material-ui/core/Typography'
 import { makeStyles } from '@material-ui/core/styles'
 
-import { alpha, Container, InputBase, Paper } from '@material-ui/core'
+import { alpha, Collapse, Container, IconButton, InputBase, Paper } from '@material-ui/core'
 import { useHistory, useLocation, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@material-ui/icons/ArrowBack'
 import { useObservable, useStore } from '../stores'
@@ -13,6 +13,9 @@ import { shortAddress } from '../types/address'
 import Smol from '../smol.png'
 import SearchIcon from '@material-ui/icons/Search'
 import { SearchStore } from '../stores/SearchStore'
+import { AlertsAndTermsStore } from '../stores/AlertAndTermsStore'
+import { Alert } from '@material-ui/lab'
+import CloseIcon from '@material-ui/icons/Close'
 
 const useStyles = makeStyles((theme) => ({
   head: {
@@ -74,12 +77,16 @@ const useStyles = makeStyles((theme) => ({
       width: 'auto',
     },
   },
+  warning: {
+    margin: theme.spacing(4)
+  }
 }))
 
 export function Header() {
   const classes = useStyles()
   const location = useLocation()
 
+  const alertsAndTermsStore = useStore(AlertsAndTermsStore)
   const web3store = useStore(Web3Store)
   const searchStore = useStore(SearchStore)
 
@@ -91,6 +98,7 @@ export function Header() {
   const isMain = location.pathname === '' || location.pathname === '/'
   const path = history.location.pathname
 
+  const alertClosed = useObservable(alertsAndTermsStore.closedSign.observable)
 
   useEffect(() => {
     if (!search || search === '') {
@@ -108,7 +116,7 @@ export function Header() {
       "Your little pond with NFTs on Arbitrum",
       "He's smiling at you",
       "Are EIP1155 tokens NFTs or just FTs?",
-      "Please open your metadata, I can't read",
+      "Please remove CORS from your metadata, I can't read",
       "Powered by your browser and nothing more",
       "This orderbook uses Waku",
       "Very smol but it's here",
@@ -133,6 +141,26 @@ export function Header() {
             </Typography>
           </Grid>
         </Grid>
+        <Collapse in={!alertClosed}>
+            <Alert
+              className={classes.warning}
+              severity='warning'
+              action={
+                <IconButton
+                  aria-label="close"
+                  color="inherit"
+                  size="small"
+                  onClick={() => {
+                    alertsAndTermsStore.closedSign.set(true)
+                  }}
+                >
+                  <CloseIcon fontSize="inherit" />
+                </IconButton>
+              }
+            >
+              Smol Puddle is an alpha software, <b>it was NOT audited</b> and <b>it doesn't have any tests</b>. Loss of funds is totally possible. <b>Use at your own risk.</b>
+            </Alert>
+          </Collapse>
         <div className={classes.headButtons}>
           <Grid container spacing={2} justifyContent="center">
             { !isMain && <Grid item>
