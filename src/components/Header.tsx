@@ -199,7 +199,7 @@ export function Header() {
             </Grid> }
             <Grid item>
              <Button onClick={() => account ? web3store.disconnect() : web3store.connect() } variant="outlined" color={ rightChain || !account ? 'primary' : 'secondary' }>
-                { account ? rightChain ? `Disconnect ${shortAddress(account)}` : 'Wrong network' : 'Connect'}
+                { account ? rightChain ? `Disconnect ${shortAddress(account)}` : 'Wrong network' : 'Connect to Arbitrum'}
               </Button>
             </Grid>
           </Grid>
