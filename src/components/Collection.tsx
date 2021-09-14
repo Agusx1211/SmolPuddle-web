@@ -5,7 +5,8 @@ import { useParams } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CollectionsStore } from "../stores/CollectionsStore"
 import { NftStore } from "../stores/NftStore"
-import { OrderbookStore } from "../stores/OrderbookStore"
+import { Collectible, OrderbookStore, StoredOrder } from "../stores/OrderbookStore"
+import { SearchStore } from "../stores/SearchStore"
 import { parseAddress } from "../types/address"
 import { Loading } from "./commons/Loading"
 import { Paginator, Page } from "./commons/Paginator"
@@ -17,45 +18,39 @@ export function Collection(props: any) {
   const nftStore = useStore(NftStore)
   const collectionsStore = useStore(CollectionsStore)
   const orderbookStore = useStore(OrderbookStore)
+  const searchStore = useStore(SearchStore)
+  
+  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
+  const sortFilter = useObservable(searchStore.sortingFilter)
+  const listings = useObservable(orderbookStore.orders)
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
+  const [sortedCollection, setSortedCollection] = useState<Collectible[]>([])
+  const [total, setTotal] = useState(0)
 
-  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
-  const listings = useObservable(orderbookStore.orders)
-
-  const itemsOfCollection = useMemo(() => {
+  useEffect(() => {
     const collectionAddr = parseAddress(collection)
     const all = [...knownItemsOfCollection, ...listings
       .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
       .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
     ]
-
-    return all.filter((v, i) => all.indexOf(v) === i)
-  }, [knownItemsOfCollection, listings])
-
-  const itemsWithOrders = useMemo(() => {
-    const collectionAddr = parseAddress(collection)
-    return itemsOfCollection.map((i) => {
+    const itemsOfCollection =  all.filter((v, i) => all.indexOf(v) === i)
+    
+    const itemsWithOrders: Collectible[] = itemsOfCollection.map((i) => {
       console.log("got listing", i)
       const itemListing = listings.find((l) => (
         parseAddress(l.order.sell.token) === collectionAddr &&
         ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
       ))
-
-      return { id: i, listing: itemListing }
+      return { tokenId: i, order: itemListing }
     })
-  }, [collection, listings, itemsOfCollection])
-
-  const sorted = useMemo(() => {
-    return itemsWithOrders.sort((a, b) => {
-      const asp = a.listing ? ethers.BigNumber.from(a.listing.order.ask.amountOrId) : undefined
-      const bsp = b.listing ? ethers.BigNumber.from(b.listing.order.ask.amountOrId) : undefined
-      if (asp && bsp) return asp.eq(bsp) ? 0 : asp.lt(bsp) ? -1 : 1
-      if (asp) return -1
-      return 1
-    })
-  }, [itemsWithOrders])
+    
+    const sorted = searchStore.sortCollectibles(itemsWithOrders)
+    const sliced = sorted.slice(page?.start ?? 0, page?.end ?? 25)
+    setSortedCollection(sliced)
+    setTotal(sorted.length)
+  }, [listings, sortFilter])
 
   useEffect(() => {
     setLoading(true)
@@ -65,8 +60,6 @@ export function Collection(props: any) {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collectionsStore, collection, setLoading])
 
-  const sliced = useMemo(() => sorted.slice(page?.start ?? 0, page?.end ?? 25), [page, sorted])
-
   return <Container>
     <Grid
       container
@@ -75,12 +68,12 @@ export function Collection(props: any) {
       justifyContent="center"
       alignItems="center"
     >
-      { (!loading && sliced.length === 0) && <div>No items found</div>}
-      { sliced.map((item) => <Grid key={`citem-${item.id}`} item xs={11} md={4}>
-        <ItemCard key={`item${item}`} collection={collection} id={item.id} />
+      { (!loading && sortedCollection.length === 0) && <div>No items found</div>}
+      { sortedCollection.map((item) => <Grid key={`citem-${item.tokenId}`} item xs={11} md={4}>
+        <ItemCard key={`item${item}`} collection={collection} id={item.tokenId} />
       </Grid>)}
     </Grid>
     <Loading loading={loading} />
-    <Paginator total={sorted.length} onPage={setPage} />
+    <Paginator total={total} onPage={setPage} />
   </Container>
 }

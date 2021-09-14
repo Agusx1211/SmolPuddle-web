@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Button from '@material-ui/core/Button'
 import Grid from '@material-ui/core/Grid'
 import Typography from '@material-ui/core/Typography'
 import { makeStyles } from '@material-ui/core/styles'
 
-import { alpha, Collapse, Container, IconButton, InputBase, Paper } from '@material-ui/core'
+import { alpha, Collapse, Container, IconButton, InputBase, MenuItem, Paper, Select } from '@material-ui/core'
 import { useHistory, useLocation, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@material-ui/icons/ArrowBack'
 import { useObservable, useStore } from '../stores'
@@ -92,6 +92,7 @@ export function Header() {
 
   const account = useObservable(web3store.account)
   const rightChain = useObservable(web3store.rightChain)
+  const sortingFilter = useObservable(searchStore.sortingFilter)
   const { search } = useParams<{ search: string }>()
   const history = useHistory()
 
@@ -99,6 +100,10 @@ export function Header() {
   const path = history.location.pathname
 
   const alertClosed = useObservable(alertsAndTermsStore.closedSign.observable)
+
+  const handleSortChange = (event: any) => {
+    searchStore.setSortingFilter(event!.target.value)
+  }
 
   useEffect(() => {
     if (!search || search === '') {
@@ -168,6 +173,19 @@ export function Header() {
                 <ArrowBackIcon color="primary" />
               </Button>
             </Grid> }
+            <Grid item>
+              <Select 
+                labelId="sorting" 
+                id="select" 
+                value={sortingFilter}
+                onChange={handleSortChange}
+              >
+                <MenuItem value="low-high-price">Price: Low to High</MenuItem>
+                {/* <MenuItem value="latest-sales">Recently Sold</MenuItem>
+                <MenuItem value="recently-listed">Recently Listed</MenuItem> */}
+                <MenuItem value="high-low-price">Price: High to Low</MenuItem>
+              </Select>
+            </Grid>
             <Grid item>
               <Paper className={classes.search} elevation={0}>
                 <div className={classes.searchIcon}>

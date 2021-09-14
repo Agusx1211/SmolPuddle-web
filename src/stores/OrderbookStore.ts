@@ -12,9 +12,14 @@ import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 
+export type Collectible = {
+  tokenId: number,
+  listing?: StoredOrder
+}
+
 export type StoredOrder = {
   order: Order,
-  lastSeen: number
+  lastSeen: number,
 }
 
 export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
