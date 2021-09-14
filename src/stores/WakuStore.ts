@@ -35,8 +35,7 @@ export class WakuStoreClass {
     if (this.waku.get() === undefined) {
       // Start waku
       const waku = await Waku.create()
-      console.log(await getBootstrapNodes())
-      const bootNodes = ['/ip4/127.0.0.1/tcp/60000/p2p/16Uiu2HAmFYAcSRsbwQ7ECc9hwaT2myH1sfM7ABJinerBCY7NmRBV']
+      const bootNodes = await getBootstrapNodes()
 
       await Promise.all(bootNodes.map(async (n: string) => {
         try {
