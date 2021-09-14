@@ -18,8 +18,8 @@ export type StoredOrder = {
 }
 
 export const REBROADCAST_WINDOW = 1 * 60 * 60 * 1000
-export const TmpApi = "http://143.198.178.42:80"
-// export const TmpApi = "https://server.smolpuddle.io"
+// export const TmpApi = "http://143.198.178.42:80"
+export const TmpApi = "https://server.smolpuddle.io"
 
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
