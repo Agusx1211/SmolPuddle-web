@@ -1,4 +1,5 @@
-import { Box, Button } from "@material-ui/core"
+import { Box } from "@material-ui/core"
+import { Pagination } from "@material-ui/lab"
 import { useEffect, useMemo } from "react"
 import { useHistory, useLocation } from "react-router-dom"
 
@@ -23,17 +24,30 @@ export function Paginator(props: { size?: number, total: number, onPage: (event:
 
   useEffect(() => onPage({start, end}), [start, end, onPage])
 
-  const nextPage = () => {
-    history.push(`?page=${page + 1}`)
-  }
+  const pages = Math.min(1 + Math.floor((total ?? 1) / DefaultPageSize), page + DefaultPageSize * 10)
 
-  const prevPage = () => {
-    const next = page - 1
-    history.push(next <= 0 ? '?' : `?page=${next}`)
-  }
+  const handleChange = ((_: any, pn: number) => {
+    const p = pn - 1
+    history.push(p <= 0 ? '?' : `?page=${p}`)
+  })
 
-  return <Box display="flex" flexDirection="row-reverse" p={1} m={3}>
-    { end < total && <Button onClick={nextPage} variant="outlined" color="primary">Next</Button> }
-    { start !== 0 && <Button onClick={prevPage} color="default">Back</Button> }
+  return <Box
+    style={{
+      marginTop: 24,
+      margin: 14
+    }}
+    flexDirection="row-reverse"
+  >
+    <Pagination
+      variant="outlined"
+      color="primary"
+      count={pages}
+      page={page + 1}
+      onChange={handleChange}
+      style={{
+        float: 'right'
+      }}
+    />
+    <br/>
   </Box>
 }
