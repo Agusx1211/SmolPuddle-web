@@ -65,7 +65,7 @@ export function Collection(props: any) {
       alignItems="center"
     >
       { (!loading && sliced.length === 0) && <div>No items found</div>}
-      { sliced.map((item) => <Grid key={`citem-${item.id}`} item  md={4}>
+      { sliced.map((item) => <Grid key={`citem-${item.id}`} item xs={11} md={4}>
         <ItemCard key={`item${item}`} collection={collection} id={item.id} />
       </Grid>)}
     </Grid>
