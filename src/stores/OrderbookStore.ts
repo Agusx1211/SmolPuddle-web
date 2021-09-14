@@ -17,7 +17,7 @@ export type StoredOrder = {
   lastSeen: number
 }
 
-export const REBROADCAST_WINDOW = 1 * 60 * 60 * 1000
+export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
 // export const TmpApi = "http://143.198.178.42:80"
 export const TmpApi = "https://server.smolpuddle.io"
 
