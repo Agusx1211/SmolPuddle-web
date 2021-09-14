@@ -21,12 +21,23 @@ export function Collection(props: any) {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
 
-  const itemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
+  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
   const listings = useObservable(orderbookStore.orders)
+
+  const itemsOfCollection = useMemo(() => {
+    const collectionAddr = parseAddress(collection)
+    const all = [...knownItemsOfCollection, ...listings
+      .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
+      .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
+    ]
+
+    return all.filter((v, i) => all.indexOf(v) === i)
+  }, [knownItemsOfCollection, listings])
 
   const itemsWithOrders = useMemo(() => {
     const collectionAddr = parseAddress(collection)
     return itemsOfCollection.map((i) => {
+      console.log("got listing", i)
       const itemListing = listings.find((l) => (
         parseAddress(l.order.sell.token) === collectionAddr &&
         ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
