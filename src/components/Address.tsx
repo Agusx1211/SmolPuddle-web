@@ -16,7 +16,6 @@ export function Address() {
   const [page, setPage] = useState<Page>()
 
   const itemsOfOwner = useObservable(nftStore.nftsOf(address))
-  const collections = useMemo(() => set(itemsOfOwner?.map((i) => i.collection) ?? []), [itemsOfOwner])
 
   useEffect(() => {
     setLoading(true)
@@ -25,11 +24,12 @@ export function Address() {
     })
   }, [address, nftStore])
 
-  useEffect(() => {
-    collections.map((c) => nftStore.fetchCollectionInfo(c))
-  }, [collections, nftStore])
-
   const sliced = useMemo(() => itemsOfOwner?.slice(page?.start ?? 0, page?.end ?? 25) ?? [], [page, itemsOfOwner])
+
+  useEffect(() => {
+    const difCollections = set(sliced.map((c) => c.collection))
+    difCollections.map((c) => nftStore.fetchCollectionInfo(c))
+  }, [sliced, nftStore])
 
   return <Container>
     <Grid
