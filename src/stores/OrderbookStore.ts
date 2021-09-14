@@ -17,7 +17,7 @@ export type StoredOrder = {
   lastSeen: number
 }
 
-export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
+export const REBROADCAST_WINDOW = 1 * 60 * 60 * 1000
 
 export class OrderbookStoreClass {
   // If we want to persist all the known orders maybe we should use IndexedDB
