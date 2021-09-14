@@ -21,12 +21,6 @@ export function Listings() {
 
   const [page, setPage] = useState<Page>()
 
-  const collections = useMemo(() => set(listings?.map((i) => i.order.sell.token) ?? []), [listings])
-
-  useEffect(() => {
-    collections.map((c) => nftStore.fetchCollectionInfo(c))
-  }, [collections, nftStore])
-
   const sorted = useMemo(() => {
     return listings.sort((a, b) => {
       const asp = ethers.BigNumber.from(a.order.ask.amountOrId)
@@ -36,6 +30,11 @@ export function Listings() {
   }, [listings])
   
   const sliced = useMemo(() => sorted.slice(page?.start ?? 0, page?.end ?? 25), [page, sorted])
+
+  useEffect(() => {
+    const difCollections = set(sliced.map((c) => c.order.sell.token))
+    difCollections.map((c) => nftStore.fetchCollectionInfo(c))
+  }, [sliced])
 
   return <Container>
     <Grid
