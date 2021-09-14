@@ -26,18 +26,15 @@ export class CollectionsStoreClass {
 
   constructor(private store: Store) {
     const web3store = this.store.get(Web3Store)
-    console.log("collections store create")
     this.loadCollections(web3store.provider.get())
   }
 
   loadCollections = async (provider: ethers.providers.Provider) => {
     try {
-      console.log("loading collections")
       const block = await provider.getBlock('latest')
       const lastBlock = ethers.BigNumber.from(block.number.toString()).sub(1024).toHexString()
       const logs = await provider.getLogs({ fromBlock: lastBlock, toBlock: 'latest', topics: [TransferERC721Event]})
       const erc721collections = logs.filter((l) => l.topics.length === 4)
-      console.log("got collections", set(erc721collections.map((l) => l.address)))
       erc721collections.forEach((log) => this.saveCollection(log.address))
     } catch (e) {
       console.warn("error loading collections", e)

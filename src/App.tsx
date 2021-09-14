@@ -10,6 +10,7 @@ import { ItemOrCollection } from './components/ItemOrCollection'
 import { Listings } from './components/Listings'
 import { Address } from './components/Address'
 import { NotificationsModal } from './components/modal/NotificationsModal'
+import { Search } from './components/Search'
 
 const theme = createTheme({
   palette: {
@@ -26,13 +27,23 @@ function App() {
         <CreateOrderModal />
         <NotificationsModal />
         <HashRouter>
-          <Header />
+          <Route
+            path={["/search/:search", "/"]}
+          >
+            <Header />
+          </Route>
             <Switch>
               <Route
                 path="/address/:address"
                 strict={true}
               >
                 <Address />
+              </Route>
+              <Route
+                path="/search/:search"
+                strict={true}
+              >
+                <Search />
               </Route>
               <Route
                 path={["/:collection/:id", "/:collection"]}

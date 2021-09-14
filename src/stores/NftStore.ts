@@ -14,6 +14,10 @@ type CollectionMetadataStorage = Record<string, CollectionMetadata>
 type ItemOwnersStorage = Record<string, Record<string, string | undefined>>
 type OwnedNftsStorage = Record<string, { collection: Address, id: ethers.BigNumber }[]>
 
+const PROXY = window.location.hostname === "localhost"
+  ? "http://localhost:8080"
+  : "/cors-proxy"
+
 export class NftStoreClass {
   // Maybe this shouldn't persist, or we should use indexdb
   // public metadata = new LocalStore<MetadataStorage, MetadataStorage>('@smolpuddle.known.metadata', {})
@@ -177,7 +181,7 @@ export class NftStoreClass {
 
     contract.tokenURI(id).then((uri: string) => {
       const url = isIpfs(uri) ? this.store.get(IpfsStore).mapToURI(uri) : uri
-      fetch(url).then((response) => {
+      fetch(`${PROXY}/${url}`).then((response) => {
         response.json().then((json) => {
           if (isMetadata(json)) {
             this.itemMetadatas.update((val) => {

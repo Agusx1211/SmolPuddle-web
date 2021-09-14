@@ -57,7 +57,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
   }, [nftStore, collection, id])
 
   const shortDescription = (description: string) => {
-    const maxLen = 240
+    const maxLen = 120
     if (description.length <= maxLen) return description
     return `${description.slice(0, maxLen - 3)}...`
   } 

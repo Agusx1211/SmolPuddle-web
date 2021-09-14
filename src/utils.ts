@@ -41,3 +41,10 @@ export function parseError(e: any): string {
 
   return capitalize(e.toString())
 }
+
+export function fuzzyEq(a?: string, b?: string) {
+  if (!a || !b) return false
+  const al = a.toLowerCase()
+  const bl = b.toLowerCase()
+  return al.includes(bl) || bl.includes(al)
+}

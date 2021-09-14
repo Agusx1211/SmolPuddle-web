@@ -1,10 +1,12 @@
 
 import { Container, Grid } from "@material-ui/core";
 import { ethers } from "ethers";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useObservable, useStore } from "../stores";
+import { NftStore } from "../stores/NftStore";
 import { OrderbookStore } from "../stores/OrderbookStore";
 import { WakuStore } from "../stores/WakuStore";
+import { set } from "../utils";
 import { Loading } from "./commons/Loading";
 import { Page, Paginator } from "./commons/Paginator";
 import { ItemCard } from "./ItemCard";
@@ -12,11 +14,18 @@ import { ItemCard } from "./ItemCard";
 export function Listings() {
   const orderBookStore = useStore(OrderbookStore)
   const wakuStore = useStore(WakuStore)
+  const nftStore = useStore(NftStore)
 
   const listings = useObservable(orderBookStore.orders)
   const wakuLoaded = useObservable(wakuStore.isInitialized)
 
   const [page, setPage] = useState<Page>()
+
+  const collections = useMemo(() => set(listings?.map((i) => i.order.sell.token) ?? []), [listings])
+
+  useEffect(() => {
+    collections.map((c) => nftStore.fetchCollectionInfo(c))
+  }, [collections, nftStore])
 
   const sorted = useMemo(() => {
     return listings.sort((a, b) => {
