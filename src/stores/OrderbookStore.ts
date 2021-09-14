@@ -41,7 +41,7 @@ export class OrderbookStoreClass {
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
         console.log("found orders", orders)
-        orders.forEach((order) => {
+        const cleanOrders = orders.map((order) => {
           // Add to list of known orders
           // TODO: let's do some sanity checks first (to avoid flooding)
           // ideas:
@@ -49,16 +49,19 @@ export class OrderbookStoreClass {
           //        put a limit of orders per-seller, check if seller has balance, etc
           if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
             console.info('Drop order', order, 'invalid hash')
-            return
+            return undefined
           }
 
           if (!isSupportedOrder(order)) {
             console.info('Drop unsupoted order type', order)
-            return
+            return undefined
           }
 
-          this.addOrder(order)
-        })
+          return order
+        }).filter((o) => o !== undefined) as Order[]
+
+        const { open } = await this.filterStatus(cleanOrders)
+        open.forEach((order) => this.addOrder(order))
       })
     })
 
@@ -110,15 +113,22 @@ export class OrderbookStoreClass {
     }
   }
 
-  refreshStatus = async (...orders: Order[]) => {
+  filterStatus = async (orders: Order[]): Promise<{ open: Order[], executed: Order[], canceled: Order[] }> => {
     // TODO: We should check more things
     // like NFT ownership and approvalForAll status
     const provider = this.store.get(Web3Store).provider.get()
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
     const statuses = await Promise.all(orders.map((o) => contract.status(o.seller, o.hash)))
 
+    const open = orders.filter((_, i) => statuses[i].eq(0))
     const executed = orders.filter((_, i) => statuses[i].eq(1))
     const canceled = orders.filter((_, i) => statuses[i].eq(2))
+
+    return { open, executed, canceled }
+  }
+
+  refreshStatus = async (...orders: Order[]) => {
+    const { executed, canceled } = await this.filterStatus(orders)
 
     this.executedOrders.update((prev) => {
       return [...prev, ...executed.map((o) => o.hash)]
