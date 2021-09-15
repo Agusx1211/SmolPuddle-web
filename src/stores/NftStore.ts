@@ -182,7 +182,14 @@ export class NftStore {
           if (isMetadata(json)) {
             this.itemMetadatas.update((val) => {
               const meta = Object.assign({}, json)
-              meta.image = this.store.get(IpfsStore).mapToURI(meta.image)
+
+              if (meta.image) {
+                meta.image = this.store.get(IpfsStore).mapToURI(meta.image)
+              } else if (meta.image_url) {
+                meta.image = this.store.get(IpfsStore).mapToURI(meta.image_url)
+              } else {
+                meta.image = '/not-found.png'
+              }
 
               if (!val[addr]) {
                 val[addr] = {}
