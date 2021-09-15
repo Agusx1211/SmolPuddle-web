@@ -95,7 +95,13 @@ export class OrderbookStoreClass {
 
       const { open } = await this.filterStatus(cleanOrders)
       console.log("got orders from api", open.length)
-      open.forEach((order) => this.addOrder(order))
+      // open.forEach((order) => this.addOrder(order))
+      // Update orders in a single mutation
+      this.knownOrders.set(open.map(o => {
+        this.store.get(CollectionsStore).saveCollection(o.sell.token)
+        const now = new Date().getTime()
+        return {order: o, lastSeen: now}
+      }))
     })
 
     this.broadcast()

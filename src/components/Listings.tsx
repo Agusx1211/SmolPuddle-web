@@ -37,14 +37,12 @@ export function Listings() {
 
   useEffect(() => {
     const sorted = searchStore.sortOrders(listings)
-    console.log(sorted)
     setSortedListings(sorted)
   }, [listings, sortFilter])
 
   useEffect(() => {
     setSlicedListings(sortedListings.slice(page?.start ?? 0, page?.end ?? 25))
   }, [sortedListings, sortFilter, page])
-
 
   useEffect(() => {
     const difCollections = set(slicedListings.map((c) => c.order.sell.token))
