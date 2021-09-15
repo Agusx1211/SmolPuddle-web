@@ -79,6 +79,21 @@ const useStyles = makeStyles((theme) => ({
   },
   warning: {
     margin: theme.spacing(4)
+  },
+  sort: {
+    color: theme.palette.primary.main,
+    border: "1px solid ".concat(alpha(theme.palette.primary.main, 0.5)),
+    '&:hover': {
+      border: "1px solid ".concat(theme.palette.primary.main),
+      backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.hoverOpacity),
+      // Reset on touch devices, it doesn't add specificity
+      '@media (hover: none)': {
+        backgroundColor: 'transparent'
+      }
+    },
+    padding: theme.spacing(0, 2),
+    height: 37,
+    borderRadius: theme.shape.borderRadius,
   }
 }))
 
@@ -176,6 +191,7 @@ export function Header() {
             </Grid> }
             <Grid item>
               <Select 
+                className={classes.sort}
                 labelId="sorting" 
                 id="select" 
                 value={sortingFilter}
@@ -183,7 +199,7 @@ export function Header() {
               >
                 <MenuItem value="low-high-price">Price: Low to High</MenuItem>
                 {/* <MenuItem value="latest-sales">Recently Sold</MenuItem> */}
-                <MenuItem value="recent-listing">Recently Listed</MenuItem>
+                {/* <MenuItem value="recent-listing">Recently Listed</MenuItem> */}
                 <MenuItem value="high-low-price">Price: High to Low</MenuItem>
               </Select>
             </Grid>
