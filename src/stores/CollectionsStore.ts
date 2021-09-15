@@ -22,7 +22,7 @@ export const isDefaultCollection = (contractAddr: string) => {
   return addr ? DefaultCollections.includes(addr) : false
 }
 
-export class CollectionsStoreClass {
+export class CollectionsStore {
   public savedCollections = new LocalStore<Address[], Address[]>("@smolpuddle.saved.collections", [])
   public allItemsOfCollection = observable<Record<string, number[]>>({})
   public knownCollections = this.savedCollections.observable.select((s) => set([...DefaultCollections, ...s]))
@@ -85,7 +85,7 @@ export class CollectionsStoreClass {
   }
 }
 
-export const CollectionsStore = {
-  constructor: CollectionsStoreClass,
-  tag: 'collectionsstore'
-}
+// export const CollectionsStore = {
+//   constructor: CollectionsStoreClass,
+//   tag: 'collectionsstore'
+// }

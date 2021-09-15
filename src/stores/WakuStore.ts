@@ -17,7 +17,7 @@ export type WakuCallback<T> = {
   isEvent: (cand: Partial<T>) => cand is T
 }
 
-export class WakuStoreClass {
+export class WakuStore {
   public waku = observable<Waku | undefined>(undefined)
 
   public observer: WakuObserver | undefined = undefined
@@ -178,7 +178,7 @@ export class WakuStoreClass {
   }
 }
 
-export const WakuStore = {
-  constructor: WakuStoreClass,
-  tag: 'wakustore'
-}
+// export const WakuStore = {
+//   constructor: WakuStoreClass,
+//   tag: 'wakustore'
+// }

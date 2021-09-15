@@ -28,8 +28,8 @@ export function buildTxNotif(tx: ethers.providers.TransactionResponse): Notifica
   }
 }
 
-export class NotificationsStoreClass {
-  public notifications = observable<Notification[]>([])
+export class NotificationsStore {
+  notifications = observable<Notification[]>([])
 
   constructor (private store: Store) {}
 
@@ -47,7 +47,7 @@ export class NotificationsStoreClass {
   }
 }
 
-export const NotificationsStore = {
-  constructor: NotificationsStoreClass,
-  tag: 'notificationsstore'
-}
+// export const NotificationsStore = {
+//   constructor: NotificationsStoreClass,
+//   tag: 'notificationsstore'
+// }

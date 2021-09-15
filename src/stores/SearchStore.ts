@@ -3,7 +3,7 @@ import { observable } from "micro-observables"
 import { Store } from "."
 import { Collectible, StoredOrder } from "./OrderbookStore"
 
-export class SearchStoreClass {
+export class SearchStore {
   public prevPage = observable('')
   public sortingFilter = observable<string>("low-high-price")
 
@@ -99,7 +99,7 @@ export class SearchStoreClass {
   }
 }
 
-export const SearchStore = {
-  constructor: SearchStoreClass,
-  tag: 'searchstore'
-}
+// export const SearchStore = {
+//   constructor: SearchStoreClass,
+//   tag: 'searchstore'
+// }

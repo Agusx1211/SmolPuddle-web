@@ -11,7 +11,7 @@ export const ARBITRUM_EXPLORER = "https://arbiscan.io/"
 export const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
 export const ARBITRUM_CHAIN_ID = 42161
 
-export class Web3StoreClass {
+export class Web3Store {
   private modal: Web3Modal
 
   public injected = observable<ethers.providers.Web3Provider | undefined>(undefined)
@@ -129,7 +129,7 @@ export class Web3StoreClass {
   }
 }
 
-export const Web3Store = {
-  constructor: Web3StoreClass,
-  tag: 'web3store'
-}
+// export const Web3Store = {
+//   constructor: Web3StoreClass,
+//   tag: 'web3store'
+// }

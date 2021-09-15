@@ -1,11 +1,14 @@
 import { Button, Snackbar, Typography } from "@material-ui/core"
 import { useEffect, useState } from "react"
-import { useObservable, useStore } from "../../stores"
+import { useStore } from "../../stores"
+import { useObservable } from 'micro-observables'
 import { NotificationsStore } from "../../stores/NotificationsStore"
 import MuiAlert from '@material-ui/lab/Alert'
 
 export function NotificationsModal() {
   const notificationsStore = useStore(NotificationsStore)
+  console.log('sup.....?', notificationsStore)
+  console.log('ah....?', notificationsStore.notifications)
   const notifications = useObservable(notificationsStore.notifications)
 
   const [closed, setClosed] = useState(false)
