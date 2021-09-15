@@ -17,7 +17,7 @@ export type WakuCallback<T> = {
   isEvent: (cand: Partial<T>) => cand is T
 }
 
-export class WakuStoreClass {
+export class WakuStore {
   public waku = observable<Waku | undefined>(undefined)
 
   public observer: WakuObserver | undefined = undefined
@@ -176,9 +176,4 @@ export class WakuStoreClass {
       this.waku.get()?.relay.deleteObserver(this.observer.callback, this.observer.topics)
     }
   }
-}
-
-export const WakuStore = {
-  constructor: WakuStoreClass,
-  tag: 'wakustore'
 }

@@ -26,7 +26,7 @@ export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
 // export const TmpApi = "http://143.198.178.42:80"
 export const TmpApi = "https://server.smolpuddle.io"
 
-export class OrderbookStoreClass {
+export class OrderbookStore {
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
   public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders.v2", [])
@@ -187,9 +187,4 @@ export class OrderbookStoreClass {
 
     this.broadcast()
   }
-}
-
-export const OrderbookStore = {
-  constructor: OrderbookStoreClass,
-  tag: 'orderbookstore'
 }

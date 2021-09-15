@@ -1,9 +1,6 @@
 import React, { useContext } from 'react'
 
-type StoreConstructor<T> = {
-  constructor: new (store: Store) => T,
-  tag: string
-}
+type StoreConstructor<T> = new (store: Store) => T
 
 /*
   Allow for dynamically importing stores
@@ -25,17 +22,17 @@ export class Store {
   stores: { [key: string]: any } = {}
 
   get<T>(klass: StoreConstructor<T>) {
-    const cachedStore = this.stores[klass.tag] as T | undefined
+    const cachedStore = this.stores[klass.name] as T | undefined
 
     if (cachedStore) {
       return cachedStore
     }
 
     // Initialize store
-    const store = new klass.constructor(this)
+    const store = new klass(this)
 
     // Add store to cache
-    this.stores[klass.tag] = store
+    this.stores[klass.name] = store
 
     return store
   }
