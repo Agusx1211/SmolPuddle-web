@@ -74,31 +74,26 @@ export class CollectionsStore {
   }
 
   fetchCollectionItems = async (collection: string, force: boolean = false) => {
-    console.warn('fetchCollectionItems: temporary dissabled')
-    // const addr = parseAddress(collection)
-    // if (addr === undefined) return console.warn("invalid address")
+    const addr = parseAddress(collection)
+    if (addr === undefined) return console.warn("invalid address")
 
-    // this.saveCollection(addr)
+    this.saveCollection(addr)
 
-    // if (!force && this.allItemsOfCollection.get()[addr] !== undefined) return console.info("collection cache hit", addr)
+    if (!force && this.allItemsOfCollection.get()[addr] !== undefined) return console.info("collection cache hit", addr)
 
-    // // There may be better ways of fetching all items of a collection
-    // // but for now we resort to loading the total supply and assuming [0 ... totalSupply] items exist
-    // const provider = this.store.get(Web3Store).provider.get()
-    // const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
+    // There may be better ways of fetching all items of a collection
+    // but for now we resort to loading the total supply and assuming [0 ... totalSupply] items exist
+    const provider = this.store.get(Web3Store).provider.get()
+    const contract = new ethers.Contract(addr, ERC721Abi).connect(provider)
 
-    // try {
-    //   const totalSupply = await contract.totalSupply()
-    //   const psupply = totalSupply.toNumber()
-    //   const supply = Math.min(psupply, 256)
-    //   if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
-  
-    //   this.allItemsOfCollection.update((all) => {
-    //     all[addr] = new Array(totalSupply.toNumber()).fill(0).map((_, i) => i)
-    //     return Object.assign({}, all)
-    //   })
-    // } catch (e) {
-    //   console.warn("error loading total supply", addr, e)
-    // }
+    try {
+      const totalSupply = await contract.totalSupply()
+      const psupply = totalSupply.toNumber()
+      const supply = Math.min(psupply, 256)
+      if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
+      this.saveCollectionItems(collection, new Array(supply).fill(0).map((_, i) => i))
+    } catch (e) {
+      console.warn("error loading total supply", addr, e)
+    }
   }
 }
