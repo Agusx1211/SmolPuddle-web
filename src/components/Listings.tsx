@@ -23,7 +23,6 @@ export function Listings() {
 
   const [sortedListings, setSortedListings] = useState<StoredOrder[]>([])
   const [slicedListings, setSlicedListings] = useState<StoredOrder[]>([])
-  const [total, setTotal] = useState(0)
   const [page, setPage] = useState<Page>()
 
   const collections = useMemo(() => set(listings?.map((i) => i.order.sell.token) ?? []), [listings])
@@ -38,8 +37,8 @@ export function Listings() {
 
   useEffect(() => {
     const sorted = searchStore.sortOrders(listings)
+    console.log(sorted)
     setSortedListings(sorted)
-    setTotal(sorted.length)
   }, [listings, sortFilter])
 
   useEffect(() => {
@@ -66,6 +65,6 @@ export function Listings() {
     </Grid>)}
   </Grid>
   <Loading loading={!wakuLoaded} />
-  <Paginator total={total} onPage={setPage} />
+  <Paginator total={sortedListings.length} onPage={setPage} />
 </Container>
 }

@@ -14,6 +14,28 @@ export class SearchStoreClass {
     this.sortingFilter.set(sort)
   }
   sortOrders =  (orders: StoredOrder[]) => {
+    const sort = this.sortingFilter.get()
+    if (sort.includes("price")) {
+      return this.sortOrdersPrice(orders)
+    } else if (sort === "recent-listing") {
+      return this.sortOrdersListing(orders)
+    } else {
+      return orders
+    }
+  }
+
+  sortCollectibles =  (collectibles: Collectible[]) => {
+    const sort = this.sortingFilter.get()
+    if (sort.includes("price")) {
+      return this.sortCollectiblesPrice(collectibles)
+    } else if (sort === "recent-listing") {
+      return this.sortCollectiblesListing(collectibles)
+    } else {
+      return collectibles
+    }
+  }
+
+  sortOrdersPrice = (orders: StoredOrder[]) => {
     return orders.sort((a, b) => {
       const asp = ethers.BigNumber.from(a.order.ask.amountOrId)
       const bsp = ethers.BigNumber.from(b.order.ask.amountOrId)
@@ -21,10 +43,26 @@ export class SearchStoreClass {
     })
   }
 
-  sortCollectibles =  (collectibles: Collectible[]) => {
+  sortCollectiblesPrice =  (collectibles: Collectible[]) => {
     return collectibles.sort((a, b) => {
       const asp = a.listing ? ethers.BigNumber.from(a.listing.order.ask.amountOrId) : undefined
       const bsp = b.listing ? ethers.BigNumber.from(b.listing.order.ask.amountOrId) : undefined
+      return this.sortingFct(asp, bsp)
+    })
+  }
+
+  sortOrdersListing = (orders: StoredOrder[]) => {
+    return orders.sort((a, b) => {
+      const asp = ethers.BigNumber.from(a.order.expiration)
+      const bsp = ethers.BigNumber.from(b.order.expiration)
+      return this.sortingFct(asp, bsp)
+    })
+  }
+
+  sortCollectiblesListing =  (collectibles: Collectible[]) => {
+    return collectibles.sort((a, b) => {
+      const asp = a.listing ? ethers.BigNumber.from(a.listing.order.expiration) : undefined
+      const bsp = b.listing ? ethers.BigNumber.from(b.listing.order.expiration) : undefined
       return this.sortingFct(asp, bsp)
     })
   }
@@ -39,11 +77,10 @@ export class SearchStoreClass {
         case "high-low-price": {
           return a.eq(b) ? 0 : a.gt(b) ? -1 : 1
         }
-        case "latest-sales": {
-          // TODO
-          return 0
+        case "recent-listing": {
+          return a.eq(b) ? 0 : a.gt(b) ? -1 : 1
         }
-        case "recently-listed": {
+        case "latest-sales": {
           // TODO
           return 0
         }

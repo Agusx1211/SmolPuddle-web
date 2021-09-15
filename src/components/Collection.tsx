@@ -30,7 +30,6 @@ export function Collection(props: any) {
   const [itemsWithOrder, setItemsWithOrder] = useState<Collectible[]>([])
   const [sortedCollection, setSortedCollection] = useState<Collectible[]>([])
   const [slicedCollection, setSlicedCollection] = useState<Collectible[]>([])
-  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     setLoading(true)
@@ -66,7 +65,6 @@ export function Collection(props: any) {
   useEffect(() => {
     const sorted = searchStore.sortCollectibles(itemsWithOrder)
     setSortedCollection(sorted)
-    setTotal(sorted.length)
   }, [itemsWithOrder, sortFilter])
 
   useEffect(() => {
@@ -87,6 +85,6 @@ export function Collection(props: any) {
       </Grid>)}
     </Grid>
     <Loading loading={loading} />
-    <Paginator total={total} onPage={setPage} />
+    <Paginator total={sortedCollection.length} onPage={setPage} />
   </Container>
 }
