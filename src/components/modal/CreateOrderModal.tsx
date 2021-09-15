@@ -178,6 +178,11 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   </div>
 }
 
+export function isValidSignature(order: Order) {
+  const signer = ethers.utils.verifyMessage(ethers.utils.arrayify(order.hash), order.signature.slice(0,132));
+  return signer === order.seller ? true : false
+}
+
 export function CreateOrderModal() {
   const classes = useStyles()
 

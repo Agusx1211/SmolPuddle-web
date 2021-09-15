@@ -2,7 +2,7 @@
 import { ethers } from "ethers"
 import { Store } from "."
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
-import { isSupportedOrder } from "../components/modal/CreateOrderModal"
+import { isSupportedOrder, isValidSignature } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
 import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
@@ -48,24 +48,7 @@ export class OrderbookStore {
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
         console.log("found orders", orders)
-        const cleanOrders = orders.map((order) => {
-          // Add to list of known orders
-          // TODO: let's do some sanity checks first (to avoid flooding)
-          // ideas:
-          //        check if seller has token, sanity check amounts, check isApproved
-          //        put a limit of orders per-seller, check if seller has balance, etc
-          if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-            console.info('Drop order', order, 'invalid hash')
-            return undefined
-          }
-
-          if (!isSupportedOrder(order)) {
-            console.info('Drop unsupoted order type', order)
-            return undefined
-          }
-
-          return order
-        }).filter((o) => o !== undefined) as Order[]
+        const cleanOrders = this.cleanOrders(orders)
 
         const { open } = await this.filterStatus(cleanOrders)
         open.forEach((order) => this.addOrder(order))
@@ -74,24 +57,7 @@ export class OrderbookStore {
 
     fetch(`${TmpApi}/get`).then(async (response) => {
       const orders = await response.json() as Order[]
-      const cleanOrders = orders.map((order) => {
-        // Add to list of known orders
-        // TODO: let's do some sanity checks first (to avoid flooding)
-        // ideas:
-        //        check if seller has token, sanity check amounts, check isApproved
-        //        put a limit of orders per-seller, check if seller has balance, etc
-        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-          console.info('Drop order', order, 'invalid hash')
-          return undefined
-        }
-
-        if (!isSupportedOrder(order)) {
-          console.info('Drop unsupoted order type', order)
-          return undefined
-        }
-
-        return order
-      }).filter((o) => o !== undefined) as Order[]
+      const cleanOrders = this.cleanOrders(orders)
 
       const { open } = await this.filterStatus(cleanOrders)
       console.log("got orders from api", open.length)
@@ -132,6 +98,32 @@ export class OrderbookStore {
         return [...known, { order, lastSeen: now }]
       }
     })
+  }
+
+  cleanOrders = (orders: Order[]) : Order[] => {
+    return orders.map((order) => {
+      // Add to list of known orders
+      // TODO: let's do some sanity checks first (to avoid flooding)
+      // ideas:
+      //        check if seller has token, sanity check amounts, check isApproved
+      //        put a limit of orders per-seller, check if seller has balance, etc
+      if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
+        console.info('Drop order', order, 'invalid hash')
+        return undefined
+      }
+
+      if (!isSupportedOrder(order)) {
+        console.info('Drop unsuported order type', order)
+        return undefined
+      }
+
+      if (!isValidSignature(order)) {
+        console.info('Drop invalid signature', order)
+        return undefined
+      }
+
+      return order
+    }).filter((o) => o !== undefined) as Order[]
   }
 
   broadcast = async () => {
