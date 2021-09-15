@@ -6,7 +6,7 @@ import { isSupportedOrder } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
 import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
-import { safe } from "../utils"
+import { safe, set } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
@@ -47,65 +47,55 @@ export class OrderbookStore {
     this.store.get(WakuStore).onEvent({
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
-        console.log("found orders", orders)
-        const cleanOrders = orders.map((order) => {
-          // Add to list of known orders
-          // TODO: let's do some sanity checks first (to avoid flooding)
-          // ideas:
-          //        check if seller has token, sanity check amounts, check isApproved
-          //        put a limit of orders per-seller, check if seller has balance, etc
-          if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-            console.info('Drop order', order, 'invalid hash')
-            return undefined
-          }
-
-          if (!isSupportedOrder(order)) {
-            console.info('Drop unsupoted order type', order)
-            return undefined
-          }
-
-          return order
-        }).filter((o) => o !== undefined) as Order[]
-
-        const { open } = await this.filterStatus(cleanOrders)
-        open.forEach((order) => this.addOrder(order))
+        return this.saveOrders(orders)
       })
     })
 
     fetch(`${TmpApi}/get`).then(async (response) => {
       const orders = await response.json() as Order[]
-      const cleanOrders = orders.map((order) => {
-        // Add to list of known orders
-        // TODO: let's do some sanity checks first (to avoid flooding)
-        // ideas:
-        //        check if seller has token, sanity check amounts, check isApproved
-        //        put a limit of orders per-seller, check if seller has balance, etc
-        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-          console.info('Drop order', order, 'invalid hash')
-          return undefined
-        }
-
-        if (!isSupportedOrder(order)) {
-          console.info('Drop unsupoted order type', order)
-          return undefined
-        }
-
-        return order
-      }).filter((o) => o !== undefined) as Order[]
-
-      const { open } = await this.filterStatus(cleanOrders)
-      console.log("got orders from api", open.length)
-      // open.forEach((order) => this.addOrder(order))
-      // Update orders in a single mutation
-      this.knownOrders.set(open.map(o => {
-        this.store.get(CollectionsStore).saveCollection(o.sell.token)
-        const now = new Date().getTime()
-        return {order: o, lastSeen: now}
-      }))
+      return this.saveOrders(orders)
     })
 
     this.broadcast()
     this.refreshStatus(...this.orders.get().map((o) => o.order))
+  }
+  
+  saveOrders = async (orders: Order[]) => {
+    const cleanOrders = orders.map((order) => {
+      // Add to list of known orders
+      // TODO: let's do some sanity checks first (to avoid flooding)
+      // ideas:
+      //        check if seller has token, sanity check amounts, check isApproved
+      //        put a limit of orders per-seller, check if seller has balance, etc
+      if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
+        console.info('Drop order', order, 'invalid hash')
+        return undefined
+      }
+
+      if (!isSupportedOrder(order)) {
+        console.info('Drop unsupoted order type', order)
+        return undefined
+      }
+
+      return order
+    }).filter((o) => o !== undefined) as Order[]
+
+    const { open } = await this.filterStatus(cleanOrders)
+
+    // open.forEach((order) => this.addOrder(order))
+    // Update orders in a single mutation
+    this.knownOrders.set(open.map(o => {
+      this.store.get(CollectionsStore).saveCollection(o.sell.token)
+      const now = new Date().getTime()
+      return {order: o, lastSeen: now}
+    }))
+
+    // save known item ids
+    const collections = set(orders.map((o) => o.sell.token))
+    collections.forEach((collection) => {
+      const ids = orders.filter((o) => o.sell.token === collection).map((o) => o.sell.amountOrId)
+      this.store.get(CollectionsStore).saveCollectionItems(collection, ids)
+    })
   }
 
   listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
