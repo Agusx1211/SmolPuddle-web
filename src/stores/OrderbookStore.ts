@@ -1,12 +1,13 @@
 
 import { ethers } from "ethers"
 import { Store } from "."
+import { ERC721Abi } from "../abi/ERC721"
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
 import { isSupportedOrder, isValidSignature } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
 import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
-import { safe } from "../utils"
+import { safe, set } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
@@ -47,31 +48,37 @@ export class OrderbookStore {
     this.store.get(WakuStore).onEvent({
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
-        console.log("found orders", orders)
-        const cleanOrders = this.cleanOrders(orders)
-
-        const { open } = await this.filterStatus(cleanOrders)
-        open.forEach((order) => this.addOrder(order))
+        return this.saveOrders(orders)
       })
     })
 
     fetch(`${TmpApi}/get`).then(async (response) => {
       const orders = await response.json() as Order[]
-      const cleanOrders = this.cleanOrders(orders)
-
-      const { open } = await this.filterStatus(cleanOrders)
-      console.log("got orders from api", open.length)
-      // open.forEach((order) => this.addOrder(order))
-      // Update orders in a single mutation
-      this.knownOrders.set(open.map(o => {
-        this.store.get(CollectionsStore).saveCollection(o.sell.token)
-        const now = new Date().getTime()
-        return {order: o, lastSeen: now}
-      }))
+      return this.saveOrders(orders)
     })
 
     this.broadcast()
     this.refreshStatus(...this.orders.get().map((o) => o.order))
+  }
+  
+  saveOrders = async (orders: Order[]) => {
+    const cleanOrders = this.cleanOrders(orders)
+    const { open } = await this.filterStatus(cleanOrders)
+
+    // open.forEach((order) => this.addOrder(order))
+    // Update orders in a single mutation
+    this.knownOrders.set(open.map(o => {
+      this.store.get(CollectionsStore).saveCollection(o.sell.token)
+      const now = new Date().getTime()
+      return {order: o, lastSeen: now}
+    }))
+
+    // save known item ids
+    const collections = set(orders.map((o) => o.sell.token))
+    collections.forEach((collection) => {
+      const ids = orders.filter((o) => o.sell.token === collection).map((o) => o.sell.amountOrId)
+      this.store.get(CollectionsStore).saveCollectionItems(collection, ids)
+    })
   }
 
   listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
@@ -113,7 +120,7 @@ export class OrderbookStore {
       }
 
       if (!isSupportedOrder(order)) {
-        console.info('Drop unsuported order type', order)
+        console.info('Drop unsupoted order type', order)
         return undefined
       }
 
@@ -163,18 +170,28 @@ export class OrderbookStore {
     const executed = orders.filter((_, i) => statuses[i].eq(1))
     const canceled = orders.filter((_, i) => statuses[i].eq(2))
 
-    return { open, executed, canceled }
+    // Only filter by correct owners on open orders
+    const owners = await Promise.all(open.map(async (o) => {
+      const contract = new ethers.Contract(o.sell.token, ERC721Abi).connect(provider)
+      try {
+        return await contract.ownerOf(o.sell.amountOrId)
+      } catch (e) { console.warn(e)}
+    }))
+
+    const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
+
+    return { open, executed, canceled: [...canceled, ...badOwner] }
   }
 
   refreshStatus = async (...orders: Order[]) => {
     const { executed, canceled } = await this.filterStatus(orders)
 
     this.executedOrders.update((prev) => {
-      return [...prev, ...executed.map((o) => o.hash)]
+      return set([...prev, ...executed.map((o) => o.hash)])
     })
 
     this.canceledOrders.update((prev) => {
-      return [...prev, ...canceled.map((o) => o.hash)]
+      return set([...prev, ...canceled.map((o) => o.hash)])
     })
 
     this.broadcast()

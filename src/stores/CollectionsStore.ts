@@ -26,8 +26,8 @@ export const isDefaultCollection = (contractAddr: string) => {
 
 export class CollectionsStore {
   public savedCollections = new LocalStore<Address[], Address[]>("@smolpuddle.saved.collections", [])
-  public allItemsOfCollection = observable<Record<string, number[]>>({})
   public knownCollections = this.savedCollections.observable.select((s) => set([...DefaultCollections, ...s]))
+  public allItemsOfCollection = observable<Record<string, number[]>>({})
 
   constructor(private store: Store) {
     const web3store = this.store.get(Web3Store)
@@ -58,6 +58,21 @@ export class CollectionsStore {
     this.savedCollections.update((known) => set([...known, addr]))
   }
 
+  saveCollectionItems = (collection: string, item: ethers.BigNumberish[]) => {
+    const addr = parseAddress(collection)
+    if (addr === undefined) return console.warn("invalid address")
+
+    this.saveCollection(addr)
+
+    const allItems = item.map((i) => typeof i === 'number' ? i : ethers.BigNumber.from(i).toNumber())
+
+    this.allItemsOfCollection.update((all) => {
+      const prev = all[addr]
+      all[addr] = prev ? set([...prev, ...allItems]) : set(allItems)
+      return Object.assign({}, all)
+    })
+  }
+
   fetchCollectionItems = async (collection: string, force: boolean = false) => {
     const addr = parseAddress(collection)
     if (addr === undefined) return console.warn("invalid address")
@@ -76,11 +91,7 @@ export class CollectionsStore {
       const psupply = totalSupply.toNumber()
       const supply = Math.min(psupply, 256)
       if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
-  
-      this.allItemsOfCollection.update((all) => {
-        all[addr] = new Array(totalSupply.toNumber()).fill(0).map((_, i) => i)
-        return Object.assign({}, all)
-      })
+      this.saveCollectionItems(collection, new Array(supply).fill(0).map((_, i) => i))
     } catch (e) {
       console.warn("error loading total supply", addr, e)
     }
