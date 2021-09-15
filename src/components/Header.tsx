@@ -197,9 +197,9 @@ export function Header() {
                 value={sortingFilter}
                 onChange={handleSortChange}
               >
+                <MenuItem value="recent-listing">Recently Listed</MenuItem>
                 <MenuItem value="low-high-price">Price: Low to High</MenuItem>
                 {/* <MenuItem value="latest-sales">Recently Sold</MenuItem> */}
-                {/* <MenuItem value="recent-listing">Recently Listed</MenuItem> */}
                 <MenuItem value="high-low-price">Price: High to Low</MenuItem>
               </Select>
             </Grid>

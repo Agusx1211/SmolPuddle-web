@@ -28,6 +28,11 @@ export function Listings() {
   const collections = useMemo(() => set(listings?.map((i) => i.order.sell.token) ?? []), [listings])
 
   useEffect(() => {
+    // Set to recent listing by default
+    searchStore.setSortingFilter("recent-listing")
+  }, [])
+
+  useEffect(() => {
     collections.map((c) => nftStore.fetchCollectionInfo(c))
   }, [collections, nftStore])
 

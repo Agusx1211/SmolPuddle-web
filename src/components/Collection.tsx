@@ -32,6 +32,11 @@ export function Collection(props: any) {
   const [slicedCollection, setSlicedCollection] = useState<Collectible[]>([])
 
   useEffect(() => {
+    // Set to lowest first by default
+    searchStore.setSortingFilter("low-high-price")
+  }, [])
+
+  useEffect(() => {
     setLoading(true)
     collectionsStore.fetchCollectionItems(collection).then(() => {
       setLoading(false)
