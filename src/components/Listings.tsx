@@ -37,10 +37,6 @@ export function Listings() {
   }, [collections, nftStore])
 
   useEffect(() => {
-    collections.map((c) => nftStore.fetchCollectionInfo(c))
-  }, [collections])
-
-  useEffect(() => {
     const sorted = searchStore.sortOrders(listings)
     setSortedListings(sorted)
   }, [listings, sortFilter])
