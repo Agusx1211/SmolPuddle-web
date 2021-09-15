@@ -38,7 +38,7 @@ export function Collection(props: any) {
       .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
     ]
     setCollectionItems(all.filter((v, i) => all.indexOf(v) === i))
-  }, [listings, knownItemsOfCollection])
+  }, [knownItemsOfCollection])
 
   useEffect(() => {
     const collectionAddr = parseAddress(collection)
@@ -59,7 +59,7 @@ export function Collection(props: any) {
     const sliced = sorted.slice(page?.start ?? 0, page?.end ?? 25)
     setSortedCollection(sliced)
     setTotal(sorted.length)
-  }, [sortFilter])
+  }, [itemsWithOrder, sortFilter])
 
   useEffect(() => {
     setLoading(true)
