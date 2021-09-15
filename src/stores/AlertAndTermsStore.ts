@@ -1,5 +1,5 @@
 import { Store } from "."
-import { LocalStore } from "./LocalStore"
+import { LocalStore } from "./utils/LocalStore"
 
 export class AlertsAndTermsStoreClass {
   public closedSign = new LocalStore<boolean, boolean>("@smolpuddle.closed.alert", false)

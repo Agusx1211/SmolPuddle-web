@@ -4,7 +4,8 @@ import { Store } from "."
 import { ERC721Abi } from "../abi/ERC721"
 import { Address, parseAddress } from "../types/address"
 import { set } from "../utils"
-import { LocalStore } from "./LocalStore"
+import { lazyPromise, LazyPromise } from "./utils/LazyPromise"
+import { LocalStore } from "./utils/LocalStore"
 import { Web3Store } from "./Web3Store"
 
 export const TransferERC721Event = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -56,7 +57,9 @@ export class CollectionsStoreClass {
     this.savedCollections.update((known) => set([...known, addr]))
   }
 
-  fetchCollectionItems = async (collection: string, force: boolean = false) => {
+  fetchCollectionItems = lazyPromise((collection) => collection, async (collection: string, force?: boolean) => {
+    console.log("fetch collection items", collection)
+
     const addr = parseAddress(collection)
     if (addr === undefined) return console.warn("invalid address")
 
@@ -72,7 +75,7 @@ export class CollectionsStoreClass {
     try {
       const totalSupply = await contract.totalSupply()
       const psupply = totalSupply.toNumber()
-      const supply = Math.min(psupply, 20000)
+      const supply = Math.min(psupply, 256)
       if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
   
       this.allItemsOfCollection.update((all) => {
@@ -82,7 +85,7 @@ export class CollectionsStoreClass {
     } catch (e) {
       console.warn("error loading total supply", addr, e)
     }
-  }
+  })
 }
 
 export const CollectionsStore = {

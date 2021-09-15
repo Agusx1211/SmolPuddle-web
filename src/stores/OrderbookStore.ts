@@ -8,7 +8,7 @@ import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
 import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
-import { LocalStore } from "./LocalStore"
+import { LocalStore } from "./utils/LocalStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 

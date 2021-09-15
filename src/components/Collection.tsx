@@ -32,6 +32,7 @@ export function Collection(props: any) {
   const [slicedCollection, setSlicedCollection] = useState<Collectible[]>([])
 
   useEffect(() => {
+    console.log("d")
     setLoading(true)
     collectionsStore.fetchCollectionItems(collection).then(() => {
       setLoading(false)
@@ -40,6 +41,7 @@ export function Collection(props: any) {
   }, [nftStore, collectionsStore, collection, setLoading])
 
   useEffect(() => {
+    console.log("c")
     const collectionAddr = parseAddress(collection)
     const all = [...knownItemsOfCollection, ...listings
       .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
@@ -49,10 +51,10 @@ export function Collection(props: any) {
   }, [collection, knownItemsOfCollection])
 
   useEffect(() => {
+    console.log("a")
     const collectionAddr = parseAddress(collection)
     setItemsWithOrder(
       collectionItems.map((i): Collectible => {
-        console.log("got asset id", i)
         const itemListing = listings.find((l) => (
           parseAddress(l.order.sell.token) === collectionAddr &&
           ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
@@ -63,6 +65,7 @@ export function Collection(props: any) {
   }, [collectionItems])
 
   useEffect(() => {
+    console.log("b")
     const sorted = searchStore.sortCollectibles(itemsWithOrder)
     setSortedCollection(sorted)
   }, [itemsWithOrder, sortFilter])
@@ -70,6 +73,8 @@ export function Collection(props: any) {
   useEffect(() => {
     setSlicedCollection(sortedCollection.slice(page?.start ?? 0, page?.end ?? 25))
   }, [sortedCollection, sortFilter, page]) // TODO: doesn't seem to detect changes in sortedCollection? Can useEffect not detect array changes correctly?
+
+  console.log("render", slicedCollection.length)
 
   return <Container>
     <Grid

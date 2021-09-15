@@ -7,6 +7,7 @@ import { CollectionMetadata, isMetadata, Metadata } from "../types/metadata"
 import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
 import { IpfsStore } from "./IpfsStore"
+import { lazyPromise } from "./utils/LazyPromise"
 import { Web3Store } from "./Web3Store"
 
 type ItemMetadataStorage = Record<string, Record<string, Metadata>>
@@ -99,6 +100,7 @@ export class NftStoreClass {
   }
 
   fetchOwnerInfo = async (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false) => {
+    console.log("fetch owner info", contractAddr, iid)
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
     if (addr === undefined) return
 
@@ -134,7 +136,8 @@ export class NftStoreClass {
     return
   }
 
-  fetchCollectionInfo = (contractAddr: string, force: boolean = false) => {
+  fetchCollectionInfo = lazyPromise((contractAddr) => contractAddr, async (contractAddr: string, force: boolean = false) => {
+    console.log("fetch collection info", contractAddr)
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
     if (addr === undefined) return
 
@@ -162,9 +165,10 @@ export class NftStoreClass {
     }).catch((e: any) => {
       console.warn("error fetching contract symbol", addr, e)
     })
-  }
+  })
 
   fetchItemInfo = (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false): any => {
+    console.log("fetch item info", contractAddr, iid)
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
     if (addr === undefined) return
 
