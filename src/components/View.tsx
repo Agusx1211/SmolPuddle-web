@@ -48,7 +48,8 @@ export function View() {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
     nftStore.fetchOwnerInfo(collection, id)
-  }, [nftStore, collection, id])
+    if (listing) orderbookStore.refreshStatus(listing.order)
+  }, [nftStore, collection, id, listing])
 
   const collectionName = metadata?.collection ? `${metadata?.collection?.name} (${metadata?.collection?.symbol})`: collection
 
