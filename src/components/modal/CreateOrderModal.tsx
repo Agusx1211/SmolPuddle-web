@@ -127,7 +127,12 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       })
 
       // Sign order
-      const signature = `${await injected.getSigner().signMessage(ethers.utils.arrayify(order.hash))}02`
+      let signature = `${await injected.getSigner().signMessage(ethers.utils.arrayify(order.hash))}02`
+      const sigVersion = signature.slice(130,132)
+      if (sigVersion !== '1b' && sigVersion !== '1c') {
+        const newVersion = parseInt(sigVersion) + 27
+        signature = signature.slice(0,130) + newVersion.toString(16) + signature.slice(132,134)
+      } 
       const signedOrder = attachSignature(order, signature)
 
       // Broadcast order
@@ -179,6 +184,11 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
 }
 
 export function isValidSignature(order: Order) {
+  const sigV = order.signature.slice(130,132)
+  if (sigV != '1b' && sigV != '1c') {
+    return false
+  }
+
   const signer = ethers.utils.verifyMessage(ethers.utils.arrayify(order.hash), order.signature.slice(0,132));
   return signer === order.seller ? true : false
 }

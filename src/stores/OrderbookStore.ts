@@ -37,9 +37,10 @@ export class OrderbookStore {
   // This may not be neccesary if we just stop tracking deleted orders
   // but keeping track of them may be neccesary so we don't relay anything that's not valid
   public orders = this.knownOrders.observable.select((orders) => {
+    const cleanedOrders = this.cleanOrders(orders) as StoredOrder[]
     return this.canceledOrders.observable.select((canceled) => {
       return this.executedOrders.observable.select((executed) => {
-        return orders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
+        return cleanedOrders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
       })
     })
   })
@@ -62,7 +63,7 @@ export class OrderbookStore {
   }
   
   saveOrders = async (orders: Order[]) => {
-    const cleanOrders = this.cleanOrders(orders)
+    const cleanOrders = this.cleanOrders(orders) as Order[]
     const { open } = await this.filterStatus(cleanOrders)
 
     // open.forEach((order) => this.addOrder(order))
@@ -107,30 +108,42 @@ export class OrderbookStore {
     })
   }
 
-  cleanOrders = (orders: Order[]) : Order[] => {
-    return orders.map((order) => {
-      // Add to list of known orders
-      // TODO: let's do some sanity checks first (to avoid flooding)
-      // ideas:
-      //        check if seller has token, sanity check amounts, check isApproved
-      //        put a limit of orders per-seller, check if seller has balance, etc
-      if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-        console.info('Drop order', order, 'invalid hash')
-        return undefined
+  cleanOrders = (orders: StoredOrder[] | Order[]) : StoredOrder[] | Order[] => {
+    return orders.map((_order) => {
+      const order: Order = (_order as Order).hash ? _order as Order : (_order as StoredOrder).order
+      if (order) { 
+        // Add to list of known orders
+        // TODO: let's do some sanity checks first (to avoid flooding)
+        // ideas:
+        //        check if seller has token, sanity check amounts, check isApproved
+        //        put a limit of orders per-seller, check if seller has balance, etc
+        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
+          console.info('Drop order', order, 'invalid hash')
+          return undefined
+        }
+
+        if (!isSupportedOrder(order)) {
+          console.info('Drop unsuported order type', order)
+          return undefined
+        }
+
+        if (!isValidSignature(order)) {
+          // Check if sig version is wrong
+          const sigV = order.signature.slice(130,132)
+          if (sigV == '00' || sigV == '01') {
+            // Since some older order may have broken signatures
+            const newVersion = parseInt(sigV) + 27
+            order.signature = order.signature.slice(0,130) + newVersion.toString(16) + order.signature.slice(132,134)
+
+          } else {
+            console.info('Drop invalid signature', order)
+            return undefined
+          }
+        }
       }
 
-      if (!isSupportedOrder(order)) {
-        console.info('Drop unsupoted order type', order)
-        return undefined
-      }
-
-      if (!isValidSignature(order)) {
-        console.info('Drop invalid signature', order)
-        return undefined
-      }
-
-      return order
-    }).filter((o) => o !== undefined) as Order[]
+      return _order
+    }).filter((o) => o !== undefined) as StoredOrder[]
   }
 
   broadcast = async () => {
