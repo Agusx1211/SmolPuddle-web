@@ -33,27 +33,35 @@ export function Collection(props: any) {
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    collectionsStore.fetchCollectionItems(collection).then(() => {
+      setLoading(false)
+    })
+    nftStore.fetchCollectionInfo(collection)
+  }, [nftStore, collectionsStore, collection, setLoading])
+
+  useEffect(() => {
     const collectionAddr = parseAddress(collection)
     const all = [...knownItemsOfCollection, ...listings
       .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
       .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
     ]
     setCollectionItems(all.filter((v, i) => all.indexOf(v) === i))
-  }, [knownItemsOfCollection])
+  }, [collection, knownItemsOfCollection])
 
   useEffect(() => {
     const collectionAddr = parseAddress(collection)
     setItemsWithOrder(
-      collectionItems.map((i) => {
-        console.log("got listing", i)
+      collectionItems.map((i): Collectible => {
+        console.log("got asset id", i)
         const itemListing = listings.find((l) => (
           parseAddress(l.order.sell.token) === collectionAddr &&
           ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
         ))
-        return { tokenId: i, order: itemListing }
+        return { tokenId: i, listing: itemListing }
       })
     )
-  }, [collection, collectionItems])
+  }, [collectionItems])
 
   useEffect(() => {
     const sorted = searchStore.sortCollectibles(itemsWithOrder)
@@ -63,15 +71,7 @@ export function Collection(props: any) {
 
   useEffect(() => {
     setSlicedCollection(sortedCollection.slice(page?.start ?? 0, page?.end ?? 25))
-  }, [sortedCollection, page])
-
-  useEffect(() => {
-    setLoading(true)
-    collectionsStore.fetchCollectionItems(collection).then(() => {
-      setLoading(false)
-    })
-    nftStore.fetchCollectionInfo(collection)
-  }, [nftStore, collectionsStore, collection, setLoading])
+  }, [sortedCollection, sortFilter, page]) // TODO: doesn't seem to detect changes in sortedCollection? Can useEffect not detect array changes correctly?
 
   return <Container>
     <Grid

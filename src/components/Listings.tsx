@@ -44,7 +44,7 @@ export function Listings() {
 
   useEffect(() => {
     setSlicedListings(sortedListings.slice(page?.start ?? 0, page?.end ?? 25))
-  }, [sortedListings, page])
+  }, [sortedListings, sortFilter, page])
 
 
   useEffect(() => {
