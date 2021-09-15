@@ -7,8 +7,6 @@ import MuiAlert from '@material-ui/lab/Alert'
 
 export function NotificationsModal() {
   const notificationsStore = useStore(NotificationsStore)
-  console.log('sup.....?', notificationsStore)
-  console.log('ah....?', notificationsStore.notifications)
   const notifications = useObservable(notificationsStore.notifications)
 
   const [closed, setClosed] = useState(false)

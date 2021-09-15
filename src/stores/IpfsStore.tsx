@@ -35,8 +35,3 @@ export class IpfsStore {
     return uri
   }
 }
-
-// export const IpfsStore = {
-//   constructor: IpfsStoreClass,
-//   tag: 'ipfsstore'
-// }

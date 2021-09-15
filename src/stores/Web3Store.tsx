@@ -128,8 +128,3 @@ export class Web3Store {
     }).catch(this.store.get(NotificationsStore).catchAndNotify)
   }
 }
-
-// export const Web3Store = {
-//   constructor: Web3StoreClass,
-//   tag: 'web3store'
-// }

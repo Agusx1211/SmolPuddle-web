@@ -98,8 +98,3 @@ export class SearchStore {
     }
   }
 }
-
-// export const SearchStore = {
-//   constructor: SearchStoreClass,
-//   tag: 'searchstore'
-// }

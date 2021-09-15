@@ -22,8 +22,3 @@ export class CreateOrderStore {
     this.target.set(undefined)
   }
 }
-
-// export const CreateOrderStore = {
-//   constructor: CreateOrderStoreClass,
-//   tag: 'createorderstore'
-// }

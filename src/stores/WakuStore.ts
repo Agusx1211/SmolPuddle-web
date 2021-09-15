@@ -177,8 +177,3 @@ export class WakuStore {
     }
   }
 }
-
-// export const WakuStore = {
-//   constructor: WakuStoreClass,
-//   tag: 'wakustore'
-// }

@@ -188,8 +188,3 @@ export class OrderbookStore {
     this.broadcast()
   }
 }
-
-// export const OrderbookStore = {
-//   constructor: OrderbookStoreClass,
-//   tag: 'orderbookstore'
-// }

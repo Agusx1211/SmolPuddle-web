@@ -46,8 +46,3 @@ export class NotificationsStore {
     this.notify({ content: parseError(e), severity: 'warning' })
   }
 }
-
-// export const NotificationsStore = {
-//   constructor: NotificationsStoreClass,
-//   tag: 'notificationsstore'
-// }

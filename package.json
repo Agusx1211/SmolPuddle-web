@@ -30,7 +30,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "node ./build.js",
     "build:dev": "CI=false yarn build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@types/ethereumjs-util": "^6.1.0",
-    "@types/react-router-dom": "^5.1.8"
+    "@types/react-router-dom": "^5.1.8",
+    "rewire": "^5.0.0"
   }
 }

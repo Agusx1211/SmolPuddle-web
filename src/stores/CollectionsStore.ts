@@ -84,8 +84,3 @@ export class CollectionsStore {
     }
   }
 }
-
-// export const CollectionsStore = {
-//   constructor: CollectionsStoreClass,
-//   tag: 'collectionsstore'
-// }

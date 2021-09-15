@@ -205,8 +205,3 @@ export class NftStore {
     })
   }
 }
-
-// export const NftStore = {
-//   constructor: NftStoreClass,
-//   tag: 'nftstore'
-// }
