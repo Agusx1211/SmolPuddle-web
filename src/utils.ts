@@ -10,7 +10,7 @@ export function safe<T>(f: () => T): T | undefined {
   }
 }
 
-export function set<T>(arr: Array<T>): Array<T> {
+export function set<T extends string | number>(arr: Array<T>): Array<T> {
   return arr.filter((v, i) => arr.indexOf(v) === i)
 }
 
