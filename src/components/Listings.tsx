@@ -21,7 +21,8 @@ export function Listings() {
   const wakuLoaded = useObservable(wakuStore.isInitialized)
   const sortFilter = useObservable(searchStore.sortingFilter)
 
-  const [sortedSliced, setSortedSliced] = useState<StoredOrder[]>([])
+  const [sortedListings, setSortedListings] = useState<StoredOrder[]>([])
+  const [slicedListings, setSlicedListings] = useState<StoredOrder[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState<Page>()
 
@@ -37,15 +38,19 @@ export function Listings() {
 
   useEffect(() => {
     const sorted = searchStore.sortOrders(listings)
-    const sliced = sorted.slice(page?.start ?? 0, page?.end ?? 25)
-    setSortedSliced(sliced)
+    setSortedListings(sorted)
     setTotal(sorted.length)
   }, [listings, sortFilter])
 
   useEffect(() => {
-    const difCollections = set(sliced.map((c) => c.order.sell.token))
+    setSlicedListings(sortedListings.slice(page?.start ?? 0, page?.end ?? 25))
+  }, [sortedListings, page])
+
+
+  useEffect(() => {
+    const difCollections = set(slicedListings.map((c) => c.order.sell.token))
     difCollections.map((c) => nftStore.fetchCollectionInfo(c))
-  }, [sliced])
+  }, [slicedListings])
 
   return <Container>
     <Grid
@@ -55,8 +60,8 @@ export function Listings() {
       justifyContent="center"
       alignItems="center"
     >
-    { (!wakuLoaded && sortedSliced.length === 0) && <div>No listings found</div>}
-    { sortedSliced && sortedSliced.map((listing, i) => <Grid key={`listing-${i}-${listing.order.hash}`} item xs={11} md={4}>
+    { (!wakuLoaded && slicedListings.length === 0) && <div>No listings found</div>}
+    { slicedListings && slicedListings.map((listing, i) => <Grid key={`listing-${i}-${listing.order.hash}`} item xs={11} md={4}>
       <ItemCard collection={listing.order.sell.token} id={listing.order.sell.amountOrId} />
     </Grid>)}
   </Grid>

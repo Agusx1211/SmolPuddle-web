@@ -29,6 +29,7 @@ export function Collection(props: any) {
   const [collectionItems, setCollectionItems] = useState<number[]>([])
   const [itemsWithOrder, setItemsWithOrder] = useState<Collectible[]>([])
   const [sortedCollection, setSortedCollection] = useState<Collectible[]>([])
+  const [slicedCollection, setSlicedCollection] = useState<Collectible[]>([])
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
@@ -56,10 +57,13 @@ export function Collection(props: any) {
 
   useEffect(() => {
     const sorted = searchStore.sortCollectibles(itemsWithOrder)
-    const sliced = sorted.slice(page?.start ?? 0, page?.end ?? 25)
-    setSortedCollection(sliced)
+    setSortedCollection(sorted)
     setTotal(sorted.length)
   }, [itemsWithOrder, sortFilter])
+
+  useEffect(() => {
+    setSlicedCollection(sortedCollection.slice(page?.start ?? 0, page?.end ?? 25))
+  }, [sortedCollection, page])
 
   useEffect(() => {
     setLoading(true)
@@ -77,8 +81,8 @@ export function Collection(props: any) {
       justifyContent="center"
       alignItems="center"
     >
-      { (!loading && sortedCollection.length === 0) && <div>No items found</div>}
-      { sortedCollection.map((item) => <Grid key={`citem-${item.tokenId}`} item xs={11} md={4}>
+      { (!loading && slicedCollection.length === 0) && <div>No items found</div>}
+      { slicedCollection.map((item) => <Grid key={`citem-${item.tokenId}`} item xs={11} md={4}>
         <ItemCard key={`item${item}`} collection={collection} id={item.tokenId} />
       </Grid>)}
     </Grid>
