@@ -74,7 +74,7 @@ export class CollectionsStore {
     try {
       const totalSupply = await contract.totalSupply()
       const psupply = totalSupply.toNumber()
-      const supply = Math.min(psupply, 20000)
+      const supply = Math.min(psupply, 256)
       if (psupply !== supply) console.warn("Supply too high", addr, "capped", psupply, supply)
   
       this.allItemsOfCollection.update((all) => {
