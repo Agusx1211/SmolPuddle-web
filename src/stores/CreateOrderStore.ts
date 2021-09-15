@@ -7,7 +7,7 @@ export type CreateOrderTarget = {
   id: ethers.BigNumberish
 }
 
-export class CreateOrderStoreClass {
+export class CreateOrderStore {
   public target = observable<CreateOrderTarget | undefined>(undefined)
   public formOpened = this.target.select((t) => t !== undefined)
 
@@ -21,9 +21,4 @@ export class CreateOrderStoreClass {
   closeCreateOrder = () => {
     this.target.set(undefined)
   }
-}
-
-export const CreateOrderStore = {
-  constructor: CreateOrderStoreClass,
-  tag: 'createorderstore'
 }

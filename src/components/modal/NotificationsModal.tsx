@@ -1,6 +1,7 @@
 import { Button, Snackbar, Typography } from "@material-ui/core"
 import { useEffect, useState } from "react"
-import { useObservable, useStore } from "../../stores"
+import { useStore } from "../../stores"
+import { useObservable } from 'micro-observables'
 import { NotificationsStore } from "../../stores/NotificationsStore"
 import MuiAlert from '@material-ui/lab/Alert'
 

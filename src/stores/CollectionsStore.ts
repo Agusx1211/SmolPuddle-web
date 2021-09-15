@@ -22,7 +22,7 @@ export const isDefaultCollection = (contractAddr: string) => {
   return addr ? DefaultCollections.includes(addr) : false
 }
 
-export class CollectionsStoreClass {
+export class CollectionsStore {
   public savedCollections = new LocalStore<Address[], Address[]>("@smolpuddle.saved.collections", [])
   public allItemsOfCollection = observable<Record<string, number[]>>({})
   public knownCollections = this.savedCollections.observable.select((s) => set([...DefaultCollections, ...s]))
@@ -83,9 +83,4 @@ export class CollectionsStoreClass {
       console.warn("error loading total supply", addr, e)
     }
   }
-}
-
-export const CollectionsStore = {
-  constructor: CollectionsStoreClass,
-  tag: 'collectionsstore'
 }

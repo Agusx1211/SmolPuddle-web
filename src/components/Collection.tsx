@@ -65,7 +65,7 @@ export function Collection(props: any) {
         return { tokenId: i, listing: itemListing }
       })
     )
-  }, [collectionItems])
+  }, [collectionItems]) //, listings, collection])
 
   useEffect(() => {
     const sorted = searchStore.sortCollectibles(itemsWithOrder)

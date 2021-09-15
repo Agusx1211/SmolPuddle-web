@@ -15,7 +15,7 @@ type ItemOwnersStorage = Record<string, Record<string, string | undefined>>
 type OwnedNftsStorage = Record<string, { collection: Address, id: ethers.BigNumber }[]>
 
 
-export class NftStoreClass {
+export class NftStore {
   // Maybe this shouldn't persist, or we should use indexdb
   // public metadata = new LocalStore<MetadataStorage, MetadataStorage>('@smolpuddle.known.metadata', {})
   public itemMetadatas = observable<ItemMetadataStorage>({})
@@ -204,9 +204,4 @@ export class NftStoreClass {
       console.warn("error fetching metadata uri", addr, id, e)
     })
   }
-}
-
-export const NftStore = {
-  constructor: NftStoreClass,
-  tag: 'nftstore'
 }

@@ -10,7 +10,7 @@ const PROXY = window.location.hostname === "localhost"
   : "https://worker.smolpuddle.io/cors-proxy/?"
 
 
-export class IpfsStoreClass {
+export class IpfsStore {
   constructor(private store: Store) {}
 
   toGateway(hash: string): string {
@@ -34,9 +34,4 @@ export class IpfsStoreClass {
 
     return uri
   }
-}
-
-export const IpfsStore = {
-  constructor: IpfsStoreClass,
-  tag: 'ipfsstore'
 }
