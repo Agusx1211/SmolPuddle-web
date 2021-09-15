@@ -20,14 +20,12 @@ export function Collection(props: any) {
   const orderbookStore = useStore(OrderbookStore)
   const searchStore = useStore(SearchStore)
   
-  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
+  // const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
   const sortFilter = useObservable(searchStore.sortingFilter)
   const listings = useObservable(orderbookStore.orders)
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
-  const [collectionItems, setCollectionItems] = useState<number[]>([])
-  const [itemsWithOrder, setItemsWithOrder] = useState<Collectible[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -37,27 +35,24 @@ export function Collection(props: any) {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collectionsStore, collection, setLoading])
 
-  useEffect(() => {
+  const collectionItems = useMemo(() => {
     const collectionAddr = parseAddress(collection)
-    const all = [...knownItemsOfCollection, ...listings
+    const all = [...listings
       .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
       .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
     ]
-    setCollectionItems(all.filter((v, i) => all.indexOf(v) === i))
-  }, [collection, knownItemsOfCollection])
+   return all.filter((v, i) => all.indexOf(v) === i)
+  }, [collection])
 
-  useEffect(() => {
+  const itemsWithOrder = useMemo(() => {
     const collectionAddr = parseAddress(collection)
-    setItemsWithOrder(
-      collectionItems.map((i): Collectible => {
-        console.log("got asset id", i)
-        const itemListing = listings.find((l) => (
-          parseAddress(l.order.sell.token) === collectionAddr &&
-          ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
-        ))
-        return { tokenId: i, listing: itemListing }
-      })
-    )
+    return collectionItems.map((i): Collectible => {
+      const itemListing = listings.find((l) => (
+        parseAddress(l.order.sell.token) === collectionAddr &&
+        ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
+      ))
+      return { tokenId: i, listing: itemListing }
+    })
   }, [collectionItems]) //, listings, collection])
 
   const sorted = useMemo(() => searchStore.sortCollectibles(itemsWithOrder), [itemsWithOrder, sortFilter])
