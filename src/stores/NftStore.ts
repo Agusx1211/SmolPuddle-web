@@ -28,7 +28,7 @@ export class NftStoreClass {
   nftsOf = (ownerAddr: string) => this.ownedNfts.select((ownedNfts) => {
     const addr = parseAddress(ownerAddr)
     if (!addr) return undefined
-  
+
     return ownedNfts[addr] ?? []
   })
 
@@ -187,7 +187,7 @@ export class NftStoreClass {
               if (!val[addr]) {
                 val[addr] = {}
               }
-    
+
               val[addr][id.toString()] = meta
               return Object.assign({}, val)
             })

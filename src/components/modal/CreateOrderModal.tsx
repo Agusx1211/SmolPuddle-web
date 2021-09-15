@@ -123,7 +123,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
         },
         currency: Currency.SellNFT,
         fees: [],
-        expiration: ethers.BigNumber.from("18446744073709551615"), // never
+        expiration: ethers.BigNumber.from("18446744073709551615").add(Date.now()), // Adding now time so we can sort recent listing
       })
 
       // Sign order

@@ -4,7 +4,7 @@ import Grid from '@material-ui/core/Grid'
 import Typography from '@material-ui/core/Typography'
 import { makeStyles } from '@material-ui/core/styles'
 
-import { alpha, Collapse, Container, IconButton, InputBase, Paper } from '@material-ui/core'
+import { alpha, Collapse, Container, IconButton, InputBase, MenuItem, Paper, Select } from '@material-ui/core'
 import { useHistory, useLocation, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@material-ui/icons/ArrowBack'
 import { useObservable, useStore } from '../stores'
@@ -79,6 +79,21 @@ const useStyles = makeStyles((theme) => ({
   },
   warning: {
     margin: theme.spacing(4)
+  },
+  sort: {
+    color: theme.palette.primary.main,
+    border: "1px solid ".concat(alpha(theme.palette.primary.main, 0.5)),
+    '&:hover': {
+      border: "1px solid ".concat(theme.palette.primary.main),
+      backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.hoverOpacity),
+      // Reset on touch devices, it doesn't add specificity
+      '@media (hover: none)': {
+        backgroundColor: 'transparent'
+      }
+    },
+    padding: theme.spacing(0, 2),
+    height: 37,
+    borderRadius: theme.shape.borderRadius,
   }
 }))
 
@@ -92,6 +107,7 @@ export function Header() {
 
   const account = useObservable(web3store.account)
   const rightChain = useObservable(web3store.rightChain)
+  const sortingFilter = useObservable(searchStore.sortingFilter)
   const { search } = useParams<{ search: string }>()
   const history = useHistory()
 
@@ -99,6 +115,10 @@ export function Header() {
   const path = history.location.pathname
 
   const alertClosed = useObservable(alertsAndTermsStore.closedSign.observable)
+
+  const handleSortChange = (event: any) => {
+    searchStore.setSortingFilter(event!.target.value)
+  }
 
   useEffect(() => {
     if (!search || search === '') {
@@ -115,7 +135,8 @@ export function Header() {
       "100% made of rainwater",
       "Your little pond with NFTs on Arbitrum",
       "He's smiling at you",
-      "Are EIP1155 tokens NFTs or just FTs?",
+      "Are ERC-1155 tokens NFTs or just FTs?",
+      "Time to dip your toes in Loot",
       "If you are a NFT creator stop enabling CORS",
       "Powered by your browser and nothing more",
       "This orderbook uses Waku",
@@ -168,6 +189,20 @@ export function Header() {
                 <ArrowBackIcon color="primary" />
               </Button>
             </Grid> }
+            <Grid item>
+              <Select 
+                className={classes.sort}
+                labelId="sorting" 
+                id="select" 
+                value={sortingFilter}
+                onChange={handleSortChange}
+              >
+                <MenuItem value="low-high-price">Price: Low to High</MenuItem>
+                {/* <MenuItem value="latest-sales">Recently Sold</MenuItem> */}
+                {/* <MenuItem value="recent-listing">Recently Listed</MenuItem> */}
+                <MenuItem value="high-low-price">Price: High to Low</MenuItem>
+              </Select>
+            </Grid>
             <Grid item>
               <Paper className={classes.search} elevation={0}>
                 <div className={classes.searchIcon}>

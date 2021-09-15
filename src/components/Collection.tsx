@@ -1,11 +1,12 @@
 import { Container, Grid } from "@material-ui/core"
 import { ethers } from "ethers"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CollectionsStore } from "../stores/CollectionsStore"
 import { NftStore } from "../stores/NftStore"
-import { OrderbookStore } from "../stores/OrderbookStore"
+import { Collectible, OrderbookStore } from "../stores/OrderbookStore"
+import { SearchStore } from "../stores/SearchStore"
 import { parseAddress } from "../types/address"
 import { Loading } from "./commons/Loading"
 import { Paginator, Page } from "./commons/Paginator"
@@ -17,45 +18,18 @@ export function Collection(props: any) {
   const nftStore = useStore(NftStore)
   const collectionsStore = useStore(CollectionsStore)
   const orderbookStore = useStore(OrderbookStore)
+  const searchStore = useStore(SearchStore)
+  
+  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
+  const sortFilter = useObservable(searchStore.sortingFilter)
+  const listings = useObservable(orderbookStore.orders)
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
-
-  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
-  const listings = useObservable(orderbookStore.orders)
-
-  const itemsOfCollection = useMemo(() => {
-    const collectionAddr = parseAddress(collection)
-    const all = [...knownItemsOfCollection, ...listings
-      .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
-      .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
-    ]
-
-    return all.filter((v, i) => all.indexOf(v) === i)
-  }, [knownItemsOfCollection, listings])
-
-  const itemsWithOrders = useMemo(() => {
-    const collectionAddr = parseAddress(collection)
-    return itemsOfCollection.map((i) => {
-      console.log("got listing", i)
-      const itemListing = listings.find((l) => (
-        parseAddress(l.order.sell.token) === collectionAddr &&
-        ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
-      ))
-
-      return { id: i, listing: itemListing }
-    })
-  }, [collection, listings, itemsOfCollection])
-
-  const sorted = useMemo(() => {
-    return itemsWithOrders.sort((a, b) => {
-      const asp = a.listing ? ethers.BigNumber.from(a.listing.order.ask.amountOrId) : undefined
-      const bsp = b.listing ? ethers.BigNumber.from(b.listing.order.ask.amountOrId) : undefined
-      if (asp && bsp) return asp.eq(bsp) ? 0 : asp.lt(bsp) ? -1 : 1
-      if (asp) return -1
-      return 1
-    })
-  }, [itemsWithOrders])
+  const [collectionItems, setCollectionItems] = useState<number[]>([])
+  const [itemsWithOrder, setItemsWithOrder] = useState<Collectible[]>([])
+  const [sortedCollection, setSortedCollection] = useState<Collectible[]>([])
+  const [slicedCollection, setSlicedCollection] = useState<Collectible[]>([])
 
   useEffect(() => {
     setLoading(true)
@@ -65,7 +39,37 @@ export function Collection(props: any) {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collectionsStore, collection, setLoading])
 
-  const sliced = useMemo(() => sorted.slice(page?.start ?? 0, page?.end ?? 25), [page, sorted])
+  useEffect(() => {
+    const collectionAddr = parseAddress(collection)
+    const all = [...knownItemsOfCollection, ...listings
+      .filter((o) => parseAddress(o.order.sell.token) === collectionAddr)
+      .map((o) => ethers.BigNumber.from(o.order.sell.amountOrId).toNumber())
+    ]
+    setCollectionItems(all.filter((v, i) => all.indexOf(v) === i))
+  }, [collection, knownItemsOfCollection])
+
+  useEffect(() => {
+    const collectionAddr = parseAddress(collection)
+    setItemsWithOrder(
+      collectionItems.map((i): Collectible => {
+        console.log("got asset id", i)
+        const itemListing = listings.find((l) => (
+          parseAddress(l.order.sell.token) === collectionAddr &&
+          ethers.BigNumber.from(i).eq(l.order.sell.amountOrId)
+        ))
+        return { tokenId: i, listing: itemListing }
+      })
+    )
+  }, [collectionItems])
+
+  useEffect(() => {
+    const sorted = searchStore.sortCollectibles(itemsWithOrder)
+    setSortedCollection(sorted)
+  }, [itemsWithOrder, sortFilter])
+
+  useEffect(() => {
+    setSlicedCollection(sortedCollection.slice(page?.start ?? 0, page?.end ?? 25))
+  }, [sortedCollection, sortFilter, page]) // TODO: doesn't seem to detect changes in sortedCollection? Can useEffect not detect array changes correctly?
 
   return <Container>
     <Grid
@@ -75,12 +79,12 @@ export function Collection(props: any) {
       justifyContent="center"
       alignItems="center"
     >
-      { (!loading && sliced.length === 0) && <div>No items found</div>}
-      { sliced.map((item) => <Grid key={`citem-${item.id}`} item xs={11} md={4}>
-        <ItemCard key={`item${item}`} collection={collection} id={item.id} />
+      { (!loading && slicedCollection.length === 0) && <div>No items found</div>}
+      { slicedCollection.map((item) => <Grid key={`citem-${item.tokenId}`} item xs={11} md={4}>
+        <ItemCard key={`item${item}`} collection={collection} id={item.tokenId} />
       </Grid>)}
     </Grid>
     <Loading loading={loading} />
-    <Paginator total={sorted.length} onPage={setPage} />
+    <Paginator total={sortedCollection.length} onPage={setPage} />
   </Container>
 }
