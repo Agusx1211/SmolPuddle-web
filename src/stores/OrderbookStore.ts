@@ -1,6 +1,7 @@
 
 import { ethers } from "ethers"
 import { Store } from "."
+import { ERC721Abi } from "../abi/ERC721"
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
 import { isSupportedOrder } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
@@ -161,18 +162,28 @@ export class OrderbookStore {
     const executed = orders.filter((_, i) => statuses[i].eq(1))
     const canceled = orders.filter((_, i) => statuses[i].eq(2))
 
-    return { open, executed, canceled }
+    // Only filter by correct owners on open orders
+    const owners = await Promise.all(open.map(async (o) => {
+      const contract = new ethers.Contract(o.sell.token, ERC721Abi).connect(provider)
+      try {
+        return await contract.ownerOf(o.sell.amountOrId)
+      } catch (e) { console.warn(e)}
+    }))
+
+    const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
+
+    return { open, executed, canceled: [...canceled, ...badOwner] }
   }
 
   refreshStatus = async (...orders: Order[]) => {
     const { executed, canceled } = await this.filterStatus(orders)
 
     this.executedOrders.update((prev) => {
-      return [...prev, ...executed.map((o) => o.hash)]
+      return set([...prev, ...executed.map((o) => o.hash)])
     })
 
     this.canceledOrders.update((prev) => {
-      return [...prev, ...canceled.map((o) => o.hash)]
+      return set([...prev, ...canceled.map((o) => o.hash)])
     })
 
     this.broadcast()
