@@ -77,6 +77,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   }, [provider, collection, account, update, notificationsStore.catchAndNotify])
 
   const handleCreateOrder = async () => {
+    
     try {
       // Connect to chain
       const injected = web3Store.injected.get()
@@ -140,7 +141,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
 
       // Notificate and close window
       notificationsStore.notify({
-        content: `Created order for ${itemMetata?.collection?.name} ${itemMetata?.item?.name}`,
+        content: `Created order for ${itemMetata?.collection.name} - ${itemMetata?.item?.name ?? `#${id}`}`,
         severity: 'success'
       })
 
@@ -161,7 +162,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   }, [collection, id])
 
   return <div className={classes.paper}>
-    <h2 id="transition-modal-title">Selling {itemMetata?.collection.name} - {itemMetata?.item?.name}</h2>
+    <h2 id="transition-modal-title">Selling {`${itemMetata?.collection.name} - ${itemMetata?.item?.name ?? `#${id}`}`}</h2>
     <TextField
       label="Price"
       id="standard-start-adornment"
