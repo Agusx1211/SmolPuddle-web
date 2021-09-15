@@ -20,8 +20,8 @@ export const DefaultCollections = [
 ]
 
 export const isDefaultCollection = (contractAddr: string) => {
-  const addr = parseAddress(contractAddr)
-  return addr ? DefaultCollections.includes(addr) : false
+  const addr = parseAddress(contractAddr)?.toLowerCase()
+  return addr ? DefaultCollections.map(add => add.toLowerCase()).includes(addr) : false
 }
 
 export class CollectionsStore {
