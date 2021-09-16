@@ -192,7 +192,7 @@ export class Database {
     const { sort, collection, status, from, inverse, count, skip } = props
     const db = await waitObservable(this.ordersDb)
 
-    const rp1 = status === 'open' ? [0, 1] : status === 'canceled' ? [1, 2] : [2, 3]
+    const rp1 = status === 'open' ? [0, 0] : status === 'canceled' ? [1, 1] : [2, 2]
     const rp3 = collection ? [collection, collection] : [MinKey, MaxKey]
 
     const range = IDBKeyRange.bound(
