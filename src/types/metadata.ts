@@ -3,7 +3,8 @@
 export type Metadata = {
   name: string,
   description: string,
-  image: string
+  image: string,
+  image_url?: string
 }
 
 export function isMetadata(cand: any): cand is Metadata {

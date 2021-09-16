@@ -77,6 +77,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   }, [provider, collection, account, update, notificationsStore.catchAndNotify])
 
   const handleCreateOrder = async () => {
+    
     try {
       // Connect to chain
       const injected = web3Store.injected.get()
@@ -127,7 +128,12 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       })
 
       // Sign order
-      const signature = `${await injected.getSigner().signMessage(ethers.utils.arrayify(order.hash))}02`
+      let signature = `${await injected.getSigner().signMessage(ethers.utils.arrayify(order.hash))}02`
+      const sigVersion = signature.slice(130,132)
+      if (sigVersion !== '1b' && sigVersion !== '1c') {
+        const newVersion = parseInt(sigVersion) + 27
+        signature = signature.slice(0,130) + newVersion.toString(16) + signature.slice(132,134)
+      } 
       const signedOrder = attachSignature(order, signature)
 
       // Broadcast order
@@ -135,7 +141,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
 
       // Notificate and close window
       notificationsStore.notify({
-        content: `Created order for ${itemMetata?.collection?.name} ${itemMetata?.item?.name}`,
+        content: `Created order for ${itemMetata?.collection.name} - ${itemMetata?.item?.name ?? `#${id}`}`,
         severity: 'success'
       })
 
@@ -156,7 +162,7 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
   }, [collection, id])
 
   return <div className={classes.paper}>
-    <h2 id="transition-modal-title">Selling {itemMetata?.collection.name} - {itemMetata?.item?.name}</h2>
+    <h2 id="transition-modal-title">Selling {`${itemMetata?.collection.name} - ${itemMetata?.item?.name ?? `#${id}`}`}</h2>
     <TextField
       label="Price"
       id="standard-start-adornment"
@@ -176,6 +182,16 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       </Button>
     </div>
   </div>
+}
+
+export function isValidSignature(order: Order) {
+  const sigV = order.signature.slice(130,132)
+  if (sigV != '1b' && sigV != '1c') {
+    return false
+  }
+
+  const signer = ethers.utils.verifyMessage(ethers.utils.arrayify(order.hash), order.signature.slice(0,132));
+  return signer === order.seller ? true : false
 }
 
 export function CreateOrderModal() {

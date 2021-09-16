@@ -1,8 +1,9 @@
 
 import { ethers } from "ethers"
 import { Store } from "."
+import { ERC721Abi } from "../abi/ERC721"
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
-import { isSupportedOrder } from "../components/modal/CreateOrderModal"
+import { isSupportedOrder, isValidSignature } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
 import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
@@ -37,9 +38,10 @@ export class OrderbookStore {
   // This may not be neccesary if we just stop tracking deleted orders
   // but keeping track of them may be neccesary so we don't relay anything that's not valid
   public orders = this.knownOrders.observable.select((orders) => {
+    const cleanedOrders = this.cleanOrders(orders) as StoredOrder[]
     return this.canceledOrders.observable.select((canceled) => {
       return this.executedOrders.observable.select((executed) => {
-        return orders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
+        return cleanedOrders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
       })
     })
   })
@@ -63,29 +65,8 @@ export class OrderbookStore {
   }
   
   saveOrders = async (orders: Order[]) => {
-    console.log("saving orders", orders.length)
-    const cleanOrders = orders.map((order) => {
-      // Add to list of known orders
-      // TODO: let's do some sanity checks first (to avoid flooding)
-      // ideas:
-      //        check if seller has token, sanity check amounts, check isApproved
-      //        put a limit of orders per-seller, check if seller has balance, etc
-      if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-        console.info('Drop order', order, 'invalid hash')
-        return undefined
-      }
-
-      if (!isSupportedOrder(order)) {
-        console.info('Drop unsupoted order type', order)
-        return undefined
-      }
-
-      return order
-    }).filter((o) => o !== undefined) as Order[]
-    console.log("clean orders", cleanOrders.length)
-
-    const open = cleanOrders
-    const { canceled, executed } = await this.filterStatus(cleanOrders)
+    const cleanOrders = this.cleanOrders(orders) as Order[]
+    const { open } = await this.filterStatus(cleanOrders)
 
     // open.forEach((order) => this.addOrder(order))
     // Update orders in a single mutation
@@ -95,12 +76,7 @@ export class OrderbookStore {
     //   return {order: o, lastSeen: now}
     // }))
 
-    console.log("storing orders", open.length)
     this.store.get(Database).storeOrders(open)
-    console.log("stored orders", open.length)
-    this.store.get(Database).setStatus(canceled.map((c) => c.hash), OrderStatus.Canceled)
-    this.store.get(Database).setStatus(executed.map((c) => c.hash), OrderStatus.Closed)
-
     // save known item ids
     // const collections = set(orders.map((o) => o.sell.token))
     // collections.forEach((collection) => {
@@ -133,6 +109,44 @@ export class OrderbookStore {
         return [...known, { order, lastSeen: now }]
       }
     })
+  }
+
+  cleanOrders = (orders: StoredOrder[] | Order[]) : StoredOrder[] | Order[] => {
+    return orders.map((_order) => {
+      const order: Order = (_order as Order).hash ? _order as Order : (_order as StoredOrder).order
+      if (order) { 
+        // Add to list of known orders
+        // TODO: let's do some sanity checks first (to avoid flooding)
+        // ideas:
+        //        check if seller has token, sanity check amounts, check isApproved
+        //        put a limit of orders per-seller, check if seller has balance, etc
+        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
+          console.info('Drop order', order, 'invalid hash')
+          return undefined
+        }
+
+        if (!isSupportedOrder(order)) {
+          console.info('Drop unsuported order type', order)
+          return undefined
+        }
+
+        if (!isValidSignature(order)) {
+          // Check if sig version is wrong
+          const sigV = order.signature.slice(130,132)
+          if (sigV == '00' || sigV == '01') {
+            // Since some older order may have broken signatures
+            const newVersion = parseInt(sigV) + 27
+            order.signature = order.signature.slice(0,130) + newVersion.toString(16) + order.signature.slice(132,134)
+
+          } else {
+            console.info('Drop invalid signature', order)
+            return undefined
+          }
+        }
+      }
+
+      return _order
+    }).filter((o) => o !== undefined) as StoredOrder[]
   }
 
   broadcast = async () => {
@@ -172,17 +186,24 @@ export class OrderbookStore {
     const executed = orders.filter((_, i) => statuses[i] && statuses[i].eq(1))
     const canceled = orders.filter((_, i) => statuses[i] && statuses[i].eq(2))
 
-    return { open, executed, canceled }
+    // Only filter by correct owners on open orders
+    const owners = await Promise.all(open.map(async (o) => {
+      const contract = new ethers.Contract(o.sell.token, ERC721Abi).connect(provider)
+      try {
+        return await contract.ownerOf(o.sell.amountOrId)
+      } catch (e) { console.warn(e)}
+    }))
+
+    const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
+
+    return { open, executed, canceled: [...canceled, ...badOwner] }
   }
 
   refreshStatus = async (...orders: Order[]) => {
     const { executed, canceled } = await this.filterStatus(orders)
 
     const db = this.store.get(Database)
-    console.log("executed orders", executed.length)
     await db.setStatus(executed.map((e) => e.hash), OrderStatus.Closed)
-    console.log("Canceled orders", canceled.length)
-
     await db.setStatus(canceled.map((e) => e.hash), OrderStatus.Canceled)
     // this.broadcast()
   }

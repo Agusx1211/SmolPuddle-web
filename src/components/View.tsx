@@ -10,6 +10,7 @@ import { SellButton } from "./buttons/SellButton"
 import { BuyButton } from "./buttons/BuyButton"
 import { OrderbookStore } from "../stores/OrderbookStore"
 import { Warning } from "./buttons/Warning"
+import { SendButton } from "./buttons/SendButton"
 
 const useStyles = makeStyles((theme) => ({
   nftTitle: {
@@ -48,7 +49,8 @@ export function View() {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
     nftStore.fetchOwnerInfo(collection, id)
-  }, [nftStore, collection, id])
+    if (listing) orderbookStore.refreshStatus(listing.order)
+  }, [nftStore, collection, id, listing])
 
   const collectionName = metadata?.collection ? `${metadata?.collection?.name} (${metadata?.collection?.symbol})`: collection
 
@@ -82,12 +84,16 @@ export function View() {
           container
           direction="row"
           justifyContent="flex-start"
+          spacing = {2}
         >
           <Grid item>
             <CancelButton order={listing?.order} variant="contained" />
           </Grid>
           <Grid item>
             <SellButton collection={collection} id={id} variant="contained" />
+          </Grid>
+          <Grid item>
+            <SendButton collection={collection} id={id} variant="contained" />
           </Grid>
           <Grid item>
             <BuyButton order={listing?.order} variant="contained" />
