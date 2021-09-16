@@ -19,6 +19,7 @@ export class Web3Store {
 
   public account: Observable<string | undefined>
   public provider: Observable<providers.MulticallProvider | ethers.providers.Web3Provider>
+  public static = new providers.MulticallProvider(new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
 
   public chainId = observable<number | undefined>(undefined)
   public networkId = observable<number | undefined>(undefined)
@@ -61,9 +62,8 @@ export class Web3Store {
 
     this.account = this.accounts.select((a) => a ? a[0] : undefined)
 
-    const provider = new providers.MulticallProvider(new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
     this.provider = this.injected.select((injected) => this.rightChain.select((isValid) => {
-      return injected && isValid ? injected : provider
+      return injected && isValid ? injected : this.static
     }))  
   }
 

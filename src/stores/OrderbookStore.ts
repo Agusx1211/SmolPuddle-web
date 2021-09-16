@@ -145,7 +145,7 @@ export class OrderbookStore {
   filterStatus = async (orders: Order[]): Promise<{ open: Order[], executed: Order[], canceled: Order[], badOwner: Order[] }> => {
     // TODO: We should check more things
     // like NFT ownership and approvalForAll status
-    const provider = this.store.get(Web3Store).provider.get()
+    const provider = this.store.get(Web3Store).static
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
     const statuses = await Promise.all(orders.map((o) => safe(() => contract.status(o.seller, o.hash))))
 
