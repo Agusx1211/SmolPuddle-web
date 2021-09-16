@@ -14,7 +14,7 @@ import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 
 
-export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
+export const REBROADCAST_WINDOW = 3 * 60 * 60 * 1000
 // export const TmpApi = "http://143.198.178.42:80"
 export const TmpApi = "https://server.smolpuddle.io"
 
@@ -117,7 +117,7 @@ export class OrderbookStore {
     const prev = this.wakuKeepAlive.get()
 
     if (now - prev < REBROADCAST_WINDOW) {
-      console.info("Time for broadcast", (now - prev) / 1000, "seconds")
+      console.info("Time for broadcast", (REBROADCAST_WINDOW - (now - prev)) / 1000, "seconds")
       return
     }
 

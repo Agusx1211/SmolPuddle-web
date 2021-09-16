@@ -14,8 +14,8 @@ export enum OrderStatus {
   BadOwner = 3
 }
 
-export const CompoundIndexAmount = 'status, sellToken, askAmountOrIdNumber'
-export const CompoundIndexExpiration = 'status, sellToken, expirationNumber'
+export const CompoundIndexAmount = 'status, askAmountOrIdNumber, sellToken'
+export const CompoundIndexExpiration = 'status, expirationNumber, sellToken'
 export const CompoundIndexSellToken = 'status, sellToken, sellAmountOrId'
 
 const MinKey = -Infinity
@@ -46,8 +46,8 @@ interface MyDB extends DBSchema {
     value: DbOrder
     key: string
     indexes: {
-      [CompoundIndexAmount]: [number, string, number],
-      [CompoundIndexExpiration]: [number, string, number],
+      [CompoundIndexAmount]: [number, number, string],
+      [CompoundIndexExpiration]: [number, number, string],
       [CompoundIndexSellToken]: [number, string, string],
       'seller': string
     }
@@ -103,8 +103,8 @@ export class Database {
         const store = db.createObjectStore('orders', {
           keyPath: 'hash'
         })
-        store.createIndex(CompoundIndexAmount, ['status', 'sellToken', 'askAmountOrIdNumber'])
-        store.createIndex(CompoundIndexExpiration, ['status', 'sellToken', 'expirationNumber'])
+        store.createIndex(CompoundIndexAmount, ['status', 'askAmountOrIdNumber', 'sellToken'])
+        store.createIndex(CompoundIndexExpiration, ['status', 'expirationNumber', 'sellToken'])
         store.createIndex(CompoundIndexSellToken, ['status', 'sellToken', 'sellAmountOrId'])
         store.createIndex('seller', 'seller')
       }
@@ -141,8 +141,10 @@ export class Database {
     const db = await waitObservable(this.ordersDb)
     const tx = db.transaction('orders', 'readwrite')
 
-    const range = IDBKeyRange.bound([1, MinKey, MinKey, MinKey], [MaxKey, MaxKey, MaxKey, MaxKey])
-    let cursor = await tx.store.openCursor(range)
+    // Maybe iterating the whole db is too much
+    // TODO: Do this in a smarter way
+    const range = IDBKeyRange.bound([0, MinKey, MinKey, MinKey], [0, MaxKey, MaxKey, MaxKey])
+    let cursor = await tx.store.index(CompoundIndexAmount).openCursor(range)
     while (cursor) {
       const val = { ...cursor.value }
       if (hashes.includes(val.hash)) {
@@ -191,11 +193,11 @@ export class Database {
     const db = await waitObservable(this.ordersDb)
 
     const rp1 = status === 'open' ? [0, 1] : status === 'canceled' ? [1, 2] : [2, 3]
-    const rp2 = collection ? [collection, collection] : [MinKey, MaxKey]
+    const rp3 = collection ? [collection, collection] : [MinKey, MaxKey]
 
     const range = IDBKeyRange.bound(
-      [rp1[0], rp2[0], from && inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MinKey],
-      [rp1[1], rp2[1], from && !inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MaxKey]
+      [rp1[0], from && inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MinKey, rp3[0]],
+      [rp1[1], from && !inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MaxKey, rp3[1]]
     )
 
     const tx = db.transaction('orders', 'readonly')
