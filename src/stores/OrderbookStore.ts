@@ -8,6 +8,7 @@ import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
 import { safe, set } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
+import { Database, OrderStatus } from "./Database"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
@@ -51,6 +52,7 @@ export class OrderbookStore {
       })
     })
 
+    console.log("get", `${TmpApi}/get`)
     fetch(`${TmpApi}/get`).then(async (response) => {
       const orders = await response.json() as Order[]
       return this.saveOrders(orders)
@@ -61,6 +63,7 @@ export class OrderbookStore {
   }
   
   saveOrders = async (orders: Order[]) => {
+    console.log("saving orders", orders.length)
     const cleanOrders = orders.map((order) => {
       // Add to list of known orders
       // TODO: let's do some sanity checks first (to avoid flooding)
@@ -79,23 +82,31 @@ export class OrderbookStore {
 
       return order
     }).filter((o) => o !== undefined) as Order[]
+    console.log("clean orders", cleanOrders.length)
 
-    const { open } = await this.filterStatus(cleanOrders)
+    const open = cleanOrders
+    const { canceled, executed } = await this.filterStatus(cleanOrders)
 
     // open.forEach((order) => this.addOrder(order))
     // Update orders in a single mutation
-    this.knownOrders.set(open.map(o => {
-      this.store.get(CollectionsStore).saveCollection(o.sell.token)
-      const now = new Date().getTime()
-      return {order: o, lastSeen: now}
-    }))
+    // this.knownOrders.set(open.map(o => {
+    //   this.store.get(CollectionsStore).saveCollection(o.sell.token)
+    //   const now = new Date().getTime()
+    //   return {order: o, lastSeen: now}
+    // }))
+
+    console.log("storing orders", open.length)
+    this.store.get(Database).storeOrders(open)
+    console.log("stored orders", open.length)
+    this.store.get(Database).setStatus(canceled.map((c) => c.hash), OrderStatus.Canceled)
+    this.store.get(Database).setStatus(executed.map((c) => c.hash), OrderStatus.Closed)
 
     // save known item ids
-    const collections = set(orders.map((o) => o.sell.token))
-    collections.forEach((collection) => {
-      const ids = orders.filter((o) => o.sell.token === collection).map((o) => o.sell.amountOrId)
-      this.store.get(CollectionsStore).saveCollectionItems(collection, ids)
-    })
+    // const collections = set(orders.map((o) => o.sell.token))
+    // collections.forEach((collection) => {
+    //   const ids = orders.filter((o) => o.sell.token === collection).map((o) => o.sell.amountOrId)
+    //   this.store.get(CollectionsStore).saveCollectionItems(collection, ids)
+    // })
   }
 
   listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
@@ -155,11 +166,11 @@ export class OrderbookStore {
     // like NFT ownership and approvalForAll status
     const provider = this.store.get(Web3Store).provider.get()
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
-    const statuses = await Promise.all(orders.map((o) => contract.status(o.seller, o.hash)))
+    const statuses = await Promise.all(orders.map((o) => safe(() => contract.status(o.seller, o.hash))))
 
-    const open = orders.filter((_, i) => statuses[i].eq(0))
-    const executed = orders.filter((_, i) => statuses[i].eq(1))
-    const canceled = orders.filter((_, i) => statuses[i].eq(2))
+    const open = orders.filter((_, i) => statuses[i] && statuses[i].eq(0))
+    const executed = orders.filter((_, i) => statuses[i] && statuses[i].eq(1))
+    const canceled = orders.filter((_, i) => statuses[i] && statuses[i].eq(2))
 
     return { open, executed, canceled }
   }
@@ -167,14 +178,12 @@ export class OrderbookStore {
   refreshStatus = async (...orders: Order[]) => {
     const { executed, canceled } = await this.filterStatus(orders)
 
-    this.executedOrders.update((prev) => {
-      return [...prev, ...executed.map((o) => o.hash)]
-    })
+    const db = this.store.get(Database)
+    console.log("executed orders", executed.length)
+    await db.setStatus(executed.map((e) => e.hash), OrderStatus.Closed)
+    console.log("Canceled orders", canceled.length)
 
-    this.canceledOrders.update((prev) => {
-      return [...prev, ...canceled.map((o) => o.hash)]
-    })
-
-    this.broadcast()
+    await db.setStatus(canceled.map((e) => e.hash), OrderStatus.Canceled)
+    // this.broadcast()
   }
 }

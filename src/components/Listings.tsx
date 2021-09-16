@@ -2,6 +2,7 @@
 import { Container, Grid } from "@material-ui/core";
 import { useEffect, useMemo, useState } from "react";
 import { useObservable, useStore } from "../stores";
+import { Database } from "../stores/Database";
 import { NftStore } from "../stores/NftStore";
 import { OrderbookStore, StoredOrder } from "../stores/OrderbookStore";
 import { SearchStore } from "../stores/SearchStore";
@@ -12,15 +13,17 @@ import { Page, Paginator } from "./commons/Paginator";
 import { ItemCard } from "./ItemCard";
 
 export function Listings() {
-  const orderBookStore = useStore(OrderbookStore)
+  const orderbookStore = useStore(OrderbookStore)
   const wakuStore = useStore(WakuStore)
   const nftStore = useStore(NftStore)
   const searchStore = useStore(SearchStore)
+  const databaseStore = useStore(Database)
 
-  const listings = useObservable(orderBookStore.orders)
   const wakuLoaded = useObservable(wakuStore.isInitialized)
   const sortFilter = useObservable(searchStore.sortingFilter)
+  const lastUpdated = useObservable(databaseStore.lastUpdatedOrders)
 
+  const [listings, setListings] = useState<StoredOrder[]>([])
   const [sortedListings, setSortedListings] = useState<StoredOrder[]>([])
   const [slicedListings, setSlicedListings] = useState<StoredOrder[]>([])
   const [page, setPage] = useState<Page>()
@@ -31,6 +34,12 @@ export function Listings() {
     // Set to recent listing by default
     searchStore.setSortingFilter("recent-listing")
   }, [])
+
+  useEffect(() => {
+    databaseStore.getOrders().then((orders) => {
+      setListings(orders.map((o) => ({ order: o, lastSeen: 0 })))
+    })
+  }, [lastUpdated])
 
   useEffect(() => {
     collections.map((c) => nftStore.fetchCollectionInfo(c))

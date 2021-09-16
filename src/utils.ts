@@ -1,4 +1,5 @@
 import { ethers } from "ethers"
+import { Observable } from "micro-observables"
 import { SmolPuddleAbi } from "./abi/SmolPuddle"
 import { SmolPuddleContract } from "./constants"
 
@@ -47,4 +48,19 @@ export function fuzzyEq(a?: string, b?: string) {
   const al = a.toLowerCase()
   const bl = b.toLowerCase()
   return al.includes(bl) || bl.includes(al)
+}
+
+export async function waitObservable<T>(o: Observable<T | undefined>): Promise<T> {
+  const val = o.get()
+  if (val !== undefined) return val
+
+  return new Promise((resolve) => {
+    var unsubscribe: undefined | (() => void)
+    unsubscribe = o.subscribe((v) => {
+      if (v !== undefined) {
+        resolve(v)
+        if (unsubscribe) unsubscribe()
+      }
+    })
+  })
 }
