@@ -1,5 +1,5 @@
 import { Container, Grid, makeStyles, Typography } from "@material-ui/core"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "react-router"
 import { Link } from "react-router-dom"
 import { useObservable, useStore } from "../stores"
@@ -11,6 +11,8 @@ import { BuyButton } from "./buttons/BuyButton"
 import { OrderbookStore } from "../stores/OrderbookStore"
 import { Warning } from "./buttons/Warning"
 import { SendButton } from "./buttons/SendButton"
+import { Order } from "../types/order"
+import { Database } from "../stores/Database"
 
 const useStyles = makeStyles((theme) => ({
   nftTitle: {
@@ -37,19 +39,28 @@ export function View() {
 
   const nftStore = useStore(NftStore)
   const orderbookStore = useStore(OrderbookStore)
+  const database = useStore(Database)
 
   const metadata = useObservable(nftStore.metadataOfItem(collection, id))
   const itemOwner = useObservable(nftStore.ownerOf(collection, id))
-  const listing = useObservable(orderbookStore.listingFor(collection, id))
+  const lastUpdate = useObservable(database.lastUpdatedOrders)
+
+  const [listing, setListing] = useState<Order | undefined>(undefined)
 
   const itemMetadata = metadata?.item
   const name = itemMetadata?.name ?? (metadata !== undefined ? `${metadata?.collection?.name ?? '...'} #${id.toString()}` : undefined)
 
   useEffect(() => {
+    database.getOrderForItem(collection, id).then((order) => {
+      setListing(order)
+    })
+  }, [collection, id, lastUpdate])
+
+  useEffect(() => {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
     nftStore.fetchOwnerInfo(collection, id)
-    if (listing) orderbookStore.refreshStatus(listing.order)
+    if (listing) orderbookStore.refreshStatus(listing)
   }, [nftStore, collection, id, listing])
 
   const collectionName = metadata?.collection ? `${metadata?.collection?.name} (${metadata?.collection?.symbol})`: collection
@@ -87,7 +98,7 @@ export function View() {
           spacing = {2}
         >
           <Grid item>
-            <CancelButton order={listing?.order} variant="contained" />
+            <CancelButton order={listing} variant="contained" />
           </Grid>
           <Grid item>
             <SellButton collection={collection} id={id} variant="contained" />
@@ -96,7 +107,7 @@ export function View() {
             <SendButton collection={collection} id={id} variant="contained" />
           </Grid>
           <Grid item>
-            <BuyButton order={listing?.order} variant="contained" />
+            <BuyButton order={listing} variant="contained" />
           </Grid>
           <Grid item>
             <Warning className={classes.warn} collection={collection} />

@@ -1,10 +1,9 @@
 import { Button, Card, CardActionArea, CardActions, CardContent, CardMedia, makeStyles, Typography } from "@material-ui/core"
 import { ethers } from "ethers"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useHistory } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { NftStore } from "../stores/NftStore"
-import { OrderbookStore } from "../stores/OrderbookStore"
 import { Address } from "../types/address"
 import Skeleton from '@material-ui/lab/Skeleton'
 import { CancelButton } from "./buttons/CancelButton"
@@ -12,6 +11,8 @@ import { BuyButton } from "./buttons/BuyButton"
 import { SellButton } from "./buttons/SellButton"
 import { Warning } from "./buttons/Warning"
 import { SendButton } from "./buttons/SendButton"
+import { Order } from "../types/order"
+import { Database } from "../stores/Database"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -58,10 +59,12 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
 
   const history = useHistory()
   const nftStore = useStore(NftStore)
-  const orderbookStore = useStore(OrderbookStore)
+  const database = useStore(Database)
 
   const metadata = useObservable(nftStore.metadataOfItem(collection, id))
-  const listing = useObservable(orderbookStore.listingFor(collection, id))
+  const lastUpdate = useObservable(database.lastUpdatedOrders)
+
+  const [listing, setListing] = useState<Order | undefined>(undefined)
 
   const itemMetadata = metadata?.item
   const name = itemMetadata?.name ?? (metadata !== undefined ? `${metadata?.collection?.name ?? '...'} #${ethers.BigNumber.from(id).toString()}` : undefined)
@@ -70,6 +73,12 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchOwnerInfo(collection, id)
   }, [nftStore, collection, id])
+
+  useEffect(() => {
+    database.getOrderForItem(collection, id).then((order) => {
+      setListing(order)
+    })
+  }, [collection, id, lastUpdate])
 
   const shortDescription = (description: string) => {
     const maxLen = 155
@@ -107,10 +116,10 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
     </CardActionArea>
     <CardActions className={classes.actions}>
       {/** TODO: Only sell if owner */}
-      <CancelButton order={listing?.order} variant="text" />
+      <CancelButton order={listing} variant="text" />
       <SellButton collection={collection} id={id} variant="text" />
       <SendButton collection={collection} id={id} variant="text" />
-      <BuyButton order={listing?.order} variant="contained" />
+      <BuyButton order={listing} variant="contained" />
       <Button disableElevation color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
         View
       </Button>

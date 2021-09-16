@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import { useParams } from "react-router"
 import { useObservable, useStore } from "../stores"
 import { CollectionsStore } from "../stores/CollectionsStore"
+import { Database } from "../stores/Database"
 import { NftStore } from "../stores/NftStore"
-import { Collectible, OrderbookStore } from "../stores/OrderbookStore"
 import { SearchStore } from "../stores/SearchStore"
-import { parseAddress } from "../types/address"
 import { Loading } from "./commons/Loading"
 import { Paginator, Page } from "./commons/Paginator"
 import { ItemCard } from "./ItemCard"
@@ -17,15 +16,40 @@ export function Collection(props: any) {
 
   const nftStore = useStore(NftStore)
   const collectionsStore = useStore(CollectionsStore)
-  const orderbookStore = useStore(OrderbookStore)
+  const databaseStore = useStore(Database)
   const searchStore = useStore(SearchStore)
   
-  const knownItemsOfCollection = useObservable(collectionsStore.itemsOfCollection(collection))
   const sortFilter = useObservable(searchStore.sortingFilter)
-  const listings = useObservable(orderbookStore.orders)
+  const lastUpdate = useObservable(databaseStore.lastUpdatedOrders)
+  const knownItems = useObservable(collectionsStore.itemsOfCollection(collection))
 
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState<Page>()
+  const [listingIds, setListingIds] = useState<ethers.BigNumber[]>([])
+  const [listingsTotal, setListingsTotal] = useState(0)
+
+  useEffect(() => {
+    databaseStore.getSortedOrders(sortFilter, page, collection).then(({ orders, total }) => {
+      // TODO: Add known collections
+      setListingIds(orders.map((o) => o.sell.amountOrId))
+      setListingsTotal(total)
+    })
+  }, [lastUpdate, sortFilter, page, collection])
+
+  const { total, ids } = useMemo(() => {
+    const filteredKnown = knownItems.filter((i) => !listingIds.find((c) => c.eq(i)))
+    const total = filteredKnown.length + listingsTotal
+    const start = page?.start ?? 0
+    const end = page?.end ?? 9
+    const count = end - start
+
+    if (listingIds.length >= count) return { ids: listingIds, total }
+
+    const startKnown = start
+    const endKnown = startKnown + count - listingIds.length
+
+    return { ids: [...listingIds, ...filteredKnown.slice(startKnown, endKnown)], total }
+  }, [knownItems, listingIds, listingsTotal])
 
   useEffect(() => {
     // Set to lowest first by default
@@ -40,20 +64,6 @@ export function Collection(props: any) {
     nftStore.fetchCollectionInfo(collection)
   }, [nftStore, collectionsStore, collection, setLoading])
 
-  const collectionAddr = parseAddress(collection)
-  const itemsWithOrder = useMemo(() => {
-    return knownItemsOfCollection.map((i) => ({
-      tokenId: i,
-      listing: listings.find((l) => (
-        l.order.sell.token === collectionAddr &&
-        ethers.BigNumber.from(l.order.sell.amountOrId).eq(i)
-      ))
-    }))
-  }, [knownItemsOfCollection, listings]) //, listings, collection])
-
-  const sorted = useMemo(() => searchStore.sortCollectibles(itemsWithOrder), [itemsWithOrder, sortFilter])
-  const sliced = useMemo(() => sorted.slice(page?.start ?? 0, page?.end ?? 25), [sorted, sortFilter, page])
-
   return <Container>
     <Grid
       container
@@ -62,12 +72,12 @@ export function Collection(props: any) {
       justifyContent="center"
       alignItems="center"
     >
-      { (!loading && sliced.length === 0) && <div>No items found</div>}
-      { sliced.map((item) => <Grid key={`citem-${item.tokenId}`} item xs={11} md={4}>
-        <ItemCard key={`item${item}`} collection={collection} id={item.tokenId} />
+      { (!loading && ids.length === 0) && <div>No items found</div>}
+      { ids.map((item) => <Grid key={`citem-${item.toString()}`} item xs={11} md={4}>
+        <ItemCard key={`item${item}`} collection={collection} id={item} />
       </Grid>)}
     </Grid>
     <Loading loading={loading} />
-    <Paginator total={sorted.length} onPage={setPage} />
+    <Paginator total={total} onPage={setPage} />
   </Container>
 }

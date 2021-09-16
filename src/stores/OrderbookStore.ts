@@ -5,45 +5,41 @@ import { ERC721Abi } from "../abi/ERC721"
 import { SmolPuddleAbi } from "../abi/SmolPuddle"
 import { isSupportedOrder, isValidSignature } from "../components/modal/CreateOrderModal"
 import { SmolPuddleContract } from "../constants"
-import { parseAddress } from "../types/address"
 import { isOrderArray, Order, orderHash } from "../types/order"
-import { safe, set } from "../utils"
+import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
+import { Database, OrderStatus } from "./Database"
 import { LocalStore } from "./LocalStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 
-export type Collectible = {
-  tokenId: number,
-  listing?: StoredOrder
-}
 
-export type StoredOrder = {
-  order: Order,
-  lastSeen: number,
-}
-
-export const REBROADCAST_WINDOW = 24 * 60 * 60 * 1000
+export const REBROADCAST_WINDOW = 3 * 60 * 60 * 1000
 // export const TmpApi = "http://143.198.178.42:80"
 export const TmpApi = "https://server.smolpuddle.io"
 
 export class OrderbookStore {
+  // TODO: Keep old stores just in case we need to re-enable them
+  // but if we don't we can't just wipe this data later
+
   // If we want to persist all the known orders maybe we should use IndexedDB
   // this is going to fill up quicklyfee
-  public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders.v2", [])
-  public canceledOrders = new LocalStore<string[], string[]>("@smolpuddle.canceled.orders", [])
-  public executedOrders = new LocalStore<string[], string[]>("@smolpuddle.executed.orders", [])
+  // public knownOrders = new LocalStore<StoredOrder[], StoredOrder[]>("@smolpuddle.known.orders.v2", [])
+  // public canceledOrders = new LocalStore<string[], string[]>("@smolpuddle.canceled.orders", [])
+  // public executedOrders = new LocalStore<string[], string[]>("@smolpuddle.executed.orders", [])
 
   // This may not be neccesary if we just stop tracking deleted orders
   // but keeping track of them may be neccesary so we don't relay anything that's not valid
-  public orders = this.knownOrders.observable.select((orders) => {
-    const cleanedOrders = this.cleanOrders(orders) as StoredOrder[]
-    return this.canceledOrders.observable.select((canceled) => {
-      return this.executedOrders.observable.select((executed) => {
-        return cleanedOrders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
-      })
-    })
-  })
+  // public orders = this.knownOrders.observable.select((orders) => {
+  //   const cleanedOrders = this.cleanOrders(orders) as StoredOrder[]
+  //   return this.canceledOrders.observable.select((canceled) => {
+  //     return this.executedOrders.observable.select((executed) => {
+  //       return cleanedOrders.filter((o) => !canceled.includes(o.order.hash) && !executed.includes(o.order.hash))
+  //     })
+  //   })
+  // })
+
+  private wakuKeepAlive = new LocalStore<number, number>("@smolpuddle.waku.keep.alive", 0)
 
   constructor(private store: Store) {
     this.store.get(WakuStore).onEvent({
@@ -55,62 +51,32 @@ export class OrderbookStore {
 
     fetch(`${TmpApi}/get`).then(async (response) => {
       const orders = await response.json() as Order[]
+      console.log("saving", orders.length, "from api")
       return this.saveOrders(orders)
     })
 
-    this.broadcast()
-    this.refreshStatus(...this.orders.get().map((o) => o.order))
+    this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
+      this.refreshStatus(...orders)
+      this.broadcast()
+    })
   }
   
   saveOrders = async (orders: Order[]) => {
     const cleanOrders = this.cleanOrders(orders) as Order[]
     const { open } = await this.filterStatus(cleanOrders)
 
-    // open.forEach((order) => this.addOrder(order))
-    // Update orders in a single mutation
-    this.knownOrders.set(open.map(o => {
-      this.store.get(CollectionsStore).saveCollection(o.sell.token)
-      const now = new Date().getTime()
-      return {order: o, lastSeen: now}
-    }))
-
-    // save known item ids
-    const collections = set(orders.map((o) => o.sell.token))
-    collections.forEach((collection) => {
-      const ids = orders.filter((o) => o.sell.token === collection).map((o) => o.sell.amountOrId)
-      this.store.get(CollectionsStore).saveCollectionItems(collection, ids)
-    })
+    this.store.get(Database).storeOrders(open)
   }
-
-  listingFor = (contractAddr: string, iid: ethers.BigNumberish) => this.orders.select((orders) => {
-    const addr = parseAddress(contractAddr)
-    if (!addr) return undefined
-
-    const id = safe(() => ethers.BigNumber.from(iid))
-    if (!id) return undefined
-
-    return orders.find((o) => ethers.utils.getAddress(o.order.sell.token) === addr && id.eq(o.order.sell.amountOrId))
-  })
 
   addOrder = (order: Order, broadcast: boolean = false) => {
     if (broadcast) this.store.get(WakuStore).sendMsg([order], isOrderArray)
 
     this.store.get(CollectionsStore).saveCollection(order.sell.token)
-    this.knownOrders.update((known) => {
-      const now = new Date().getTime()
-      const index = known.findIndex((o) => o.order.hash === order.hash)
-      if (index !== -1) {
-        known[index].lastSeen = now
-        return Object.assign([], known)
-      } else {
-        return [...known, { order, lastSeen: now }]
-      }
-    })
+    this.store.get(Database).storeOrders([order])
   }
 
-  cleanOrders = (orders: StoredOrder[] | Order[]) : StoredOrder[] | Order[] => {
-    return orders.map((_order) => {
-      const order: Order = (_order as Order).hash ? _order as Order : (_order as StoredOrder).order
+  cleanOrders = (orders: Order[]) : Order[] => {
+    return orders.map((order) => {
       if (order) { 
         // Add to list of known orders
         // TODO: let's do some sanity checks first (to avoid flooding)
@@ -142,46 +108,50 @@ export class OrderbookStore {
         }
       }
 
-      return _order
-    }).filter((o) => o !== undefined) as StoredOrder[]
+      return order
+    }).filter((o) => o !== undefined) as Order[]
   }
 
   broadcast = async () => {
     const now = new Date().getTime()
-    const orders = this.orders.get()
+    const prev = this.wakuKeepAlive.get()
 
-    const notSeenInWindow = orders.filter((o) => now - o.lastSeen > REBROADCAST_WINDOW)
+    if (now - prev < REBROADCAST_WINDOW) {
+      console.info("Time for broadcast", (REBROADCAST_WINDOW - (now - prev)) / 1000, "seconds")
+      return
+    }
 
-    fetch(`${TmpApi}/post`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-      body: JSON.stringify(orders.map((o) => o.order))
+    this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
+      console.log("Broadcast orders", orders.length)
+
+      fetch(`${TmpApi}/post`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: JSON.stringify(orders)
+      }).catch((e) => {
+        console.warn("error calling api", e)
+      })
+
+      this.store.get(WakuStore).sendMsg(orders, isOrderArray).catch((e) => {
+        console.warn("error sending to waku", e)
+      })
     }).catch((e) => {
-      console.warn("error calling api", e)
+      console.error("Error on broadcast", e)
     })
 
-    if (notSeenInWindow.length > 0) {
-      this.store.get(WakuStore).sendMsg(notSeenInWindow.map((o) => o.order), isOrderArray)
-      this.knownOrders.update((known) => {
-        known.forEach((o, i) => {
-          const found = notSeenInWindow.find((nt) => nt.order.hash === o.order.hash)
-          if (found) known[i].lastSeen = now
-        })
-        return [...known]
-      })
-    }
+    this.wakuKeepAlive.set(now)
   }
 
-  filterStatus = async (orders: Order[]): Promise<{ open: Order[], executed: Order[], canceled: Order[] }> => {
+  filterStatus = async (orders: Order[]): Promise<{ open: Order[], executed: Order[], canceled: Order[], badOwner: Order[] }> => {
     // TODO: We should check more things
     // like NFT ownership and approvalForAll status
     const provider = this.store.get(Web3Store).provider.get()
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
-    const statuses = await Promise.all(orders.map((o) => contract.status(o.seller, o.hash)))
+    const statuses = await Promise.all(orders.map((o) => safe(() => contract.status(o.seller, o.hash))))
 
-    const open = orders.filter((_, i) => statuses[i].eq(0))
-    const executed = orders.filter((_, i) => statuses[i].eq(1))
-    const canceled = orders.filter((_, i) => statuses[i].eq(2))
+    const open = orders.filter((_, i) => statuses[i] && statuses[i].eq(0))
+    const executed = orders.filter((_, i) => statuses[i] && statuses[i].eq(1))
+    const canceled = orders.filter((_, i) => statuses[i] && statuses[i].eq(2))
 
     // Only filter by correct owners on open orders
     const owners = await Promise.all(open.map(async (o) => {
@@ -193,20 +163,15 @@ export class OrderbookStore {
 
     const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
 
-    return { open, executed, canceled: [...canceled, ...badOwner] }
+    return { open, executed, canceled, badOwner }
   }
 
   refreshStatus = async (...orders: Order[]) => {
-    const { executed, canceled } = await this.filterStatus(orders)
+    const { executed, canceled, badOwner } = await this.filterStatus(orders)
 
-    this.executedOrders.update((prev) => {
-      return set([...prev, ...executed.map((o) => o.hash)])
-    })
-
-    this.canceledOrders.update((prev) => {
-      return set([...prev, ...canceled.map((o) => o.hash)])
-    })
-
-    this.broadcast()
+    const db = this.store.get(Database)
+    await db.setStatus(executed.map((e) => e.hash), OrderStatus.Closed)
+    await db.setStatus(canceled.map((e) => e.hash), OrderStatus.Canceled)
+    await db.setStatus(badOwner.map((e) => e.hash), OrderStatus.BadOwner)
   }
 }

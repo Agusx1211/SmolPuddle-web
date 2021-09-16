@@ -12,6 +12,8 @@ import { Listings } from './components/Listings'
 import { Address } from './components/Address'
 import { NotificationsModal } from './components/modal/NotificationsModal'
 import { Search } from './components/Search'
+import { useStore } from './stores'
+import { OrderbookStore } from './stores/OrderbookStore'
 
 const theme = createTheme({
   palette: {
@@ -22,6 +24,10 @@ const theme = createTheme({
 })
 
 function App() {
+  // We turn on the orderbook-store so it
+  // starts listening to Waku and to the API
+  useStore(OrderbookStore)
+
   return (
     <div className="App">
       <ThemeProvider theme={theme}>
