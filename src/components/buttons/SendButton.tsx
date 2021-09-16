@@ -20,7 +20,7 @@ export function SendButton(props: { collection: Address, id: ethers.BigNumberish
 
   useEffect(() => {
     setIsOwner(account !== undefined && account === itemOwner)
-  }, [itemOwner])
+  }, [account, itemOwner])
 
   return <>
   { (isOwner) && <Button variant={variant} disableElevation color="primary" onClick={() => createTransferStore.openCreateTransfer({ collection, id })}>

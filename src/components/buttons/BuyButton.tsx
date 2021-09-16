@@ -8,11 +8,13 @@ import { OrderbookStore } from "../../stores/OrderbookStore";
 import { Web3Store } from "../../stores/Web3Store";
 import { Order, orderAbiEncode } from "../../types/order";
 import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore';
+import { NftStore } from "../../stores/NftStore";
 
 export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' | 'contained' | undefined }) {
   const { order, variant } = props
 
   const web3Store = useStore(Web3Store)
+  const nftStore = useStore(NftStore)
   const orderbookStore = useStore(OrderbookStore)
   const notificationsStore = useStore(NotificationsStore)
 
@@ -40,6 +42,7 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
       tx.wait().then(() => {
         orderbookStore.refreshStatus(order).then(() => {
           setPending(false)
+          nftStore.fetchOwnerInfo(order.sell.token, order.sell.amountOrId, true)
         })
       }).catch(notificationsStore.catchAndNotify)
     }).catch(notificationsStore.catchAndNotify)

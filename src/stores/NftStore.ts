@@ -99,6 +99,7 @@ export class NftStore {
   }
 
   fetchOwnerInfo = async (contractAddr: string, iid: ethers.BigNumberish, force: boolean = false) => {
+    console.log('FETCHING OWNER INFO')
     const addr = safe(() => ethers.utils.getAddress(contractAddr))
     if (addr === undefined) return
 
@@ -122,6 +123,7 @@ export class NftStore {
       const owner = await contract.ownerOf(id)
       const ownerAddr = parseAddress(owner)
       if (!ownerAddr) return console.warn("error parsing owner address", owner)
+      console.log(`${ownerAddr} is the new owner of ${iid} - ${contractAddr}`)
       setOwner(ownerAddr)
     } catch (e: any) {
       console.warn(e)

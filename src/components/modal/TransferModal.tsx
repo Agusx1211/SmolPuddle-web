@@ -62,6 +62,8 @@ export function CreateTransferModalContent(props: { collection: string, id: ethe
         return console.error('invalid address', sender)
       }
 
+      console.log('GOING TO TRANFER')
+
       const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
       contract.transferFrom(sender, recipient, id).then((tx: ethers.providers.TransactionResponse) => {
         setPending(true)
@@ -69,7 +71,11 @@ export function CreateTransferModalContent(props: { collection: string, id: ethe
         tx.wait().then(() => {
           setPending(false)
           setUpdate(update + 1)
+          console.log('TRANSFERED')
+          nftStore.fetchOwnerInfo(collection, id, true)
+
         }).catch(notificationsStore.catchAndNotify)
+
       }).catch(notificationsStore.catchAndNotify)
 
       // Notificate and close window
@@ -78,7 +84,6 @@ export function CreateTransferModalContent(props: { collection: string, id: ethe
         severity: 'success'
       })
 
-      nftStore.ownerOf(collection, id)
       createTransferStore.closeCreateTransfer()
 
     } catch (e) {
