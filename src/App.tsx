@@ -6,6 +6,7 @@ import { Footer } from './components/Footer'
 import { HashRouter, Route, Switch } from 'react-router-dom'
 import { createTheme, ThemeProvider } from '@material-ui/core'
 import { CreateOrderModal } from './components/modal/CreateOrderModal'
+import { CreateTransferModal } from './components/modal/TransferModal'
 import { ItemOrCollection } from './components/ItemOrCollection'
 import { Listings } from './components/Listings'
 import { Address } from './components/Address'
@@ -25,6 +26,7 @@ function App() {
     <div className="App">
       <ThemeProvider theme={theme}>
         <CreateOrderModal />
+        <CreateTransferModal />
         <NotificationsModal />
         <HashRouter>
           <Route

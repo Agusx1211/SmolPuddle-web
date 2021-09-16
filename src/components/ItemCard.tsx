@@ -11,6 +11,7 @@ import { CancelButton } from "./buttons/CancelButton"
 import { BuyButton } from "./buttons/BuyButton"
 import { SellButton } from "./buttons/SellButton"
 import { Warning } from "./buttons/Warning"
+import { SendButton } from "./buttons/SendButton"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -108,6 +109,7 @@ export function ItemCard(props: { collection: Address, id: ethers.BigNumberish }
       {/** TODO: Only sell if owner */}
       <CancelButton order={listing?.order} variant="text" />
       <SellButton collection={collection} id={id} variant="text" />
+      <SendButton collection={collection} id={id} variant="text" />
       <BuyButton order={listing?.order} variant="contained" />
       <Button disableElevation color="primary" onClick={() => history.push(`/${collection}/${ethers.BigNumber.from(id).toString()}`)}>
         View
