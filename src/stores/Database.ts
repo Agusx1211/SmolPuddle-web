@@ -2,13 +2,24 @@ import { ethers } from "ethers"
 import { openDB, IDBPDatabase, DBSchema } from "idb"
 import { observable } from "micro-observables"
 import { Store } from "."
+import { Page } from "../components/commons/Paginator"
 import { Order } from "../types/order"
 import { waitObservable } from "../utils"
+import { SortFilter } from "./SearchStore"
 
 export enum OrderStatus {
+  Open = 0,
   Closed = 1,
-  Canceled = 2
+  Canceled = 2,
+  BadOwner = 3
 }
+
+export const CompoundIndexAmount = 'status, sellToken, askAmountOrIdNumber'
+export const CompoundIndexExpiration = 'status, sellToken, expirationNumber'
+export const CompoundIndexSellToken = 'status, sellToken, sellAmountOrId'
+
+const MinKey = -Infinity
+const MaxKey = +Infinity
 
 export type DbOrder = {
   hash: string,
@@ -27,7 +38,7 @@ export type DbOrder = {
     amontOrId: string
   }[],
   signature: string,
-  status?: OrderStatus.Closed | OrderStatus.Canceled
+  status: OrderStatus
 }
 
 interface MyDB extends DBSchema {
@@ -35,17 +46,15 @@ interface MyDB extends DBSchema {
     value: DbOrder
     key: string
     indexes: {
-      'sellToken': string,
-      'sellAmountOrId': string,
-      'askAmountOrIdNumber': number,
-      'seller': string,
-      'expirationNumber': string,
-      'status': number
+      [CompoundIndexAmount]: [number, string, number],
+      [CompoundIndexExpiration]: [number, string, number],
+      [CompoundIndexSellToken]: [number, string, string],
+      'seller': string
     }
   }
 }
 
-function toDbOrders(orders: Order[]): DbOrder[] {
+function toDbOrders(orders: Order[], status: OrderStatus): DbOrder[] {
   return orders.map((o) => ({
     hash: o.hash,
     currency: o.currency,
@@ -59,7 +68,8 @@ function toDbOrders(orders: Order[]): DbOrder[] {
     expirationNumber: parseFloat(ethers.BigNumber.from(o.expiration).toString()),
     salt: o.salt,
     fees: o.fees.map((f) => ({ recipient: f.recipient, amontOrId: ethers.BigNumber.from(f.amontOrId).toString() })),
-    signature: o.signature
+    signature: o.signature,
+    status
   }))
 }
 
@@ -93,22 +103,17 @@ export class Database {
         const store = db.createObjectStore('orders', {
           keyPath: 'hash'
         })
-        store.createIndex('sellToken', 'sellToken')
-        store.createIndex('sellAmountOrId', 'sellAmountOrId')
-        store.createIndex('askAmountOrIdNumber', 'askAmountOrIdNumber')
+        store.createIndex(CompoundIndexAmount, ['status', 'sellToken', 'askAmountOrIdNumber'])
+        store.createIndex(CompoundIndexExpiration, ['status', 'sellToken', 'expirationNumber'])
+        store.createIndex(CompoundIndexSellToken, ['status', 'sellToken', 'sellAmountOrId'])
         store.createIndex('seller', 'seller')
-        store.createIndex('expirationNumber', 'expirationNumber')
-        store.createIndex('status', 'status')
       }
     }).then((db) => this.ordersDb.set(db))
   }
 
   storeOrders = async (orders: Order[]) => {
-    console.log("store", orders.length)
-    const dbOrders = toDbOrders(orders)
-    console.log("wait db")
+    const dbOrders = toDbOrders(orders, OrderStatus.Open)
     const db = await waitObservable(this.ordersDb)
-    console.log("got db")
     const tx = db.transaction('orders', 'readwrite')
 
     let writeList = dbOrders.map((o) => o.hash)
@@ -125,35 +130,108 @@ export class Database {
       return dbo ? tx.store.add(dbo) : undefined
     }))
 
-    console.log("finished tx",)
+    await tx.done
 
     this.lastUpdatedOrders.set(Date.now())
   }
 
   setStatus = async (hashes: string[], status: OrderStatus) => {
-    console.log("set status", hashes.length)
-    const db = await waitObservable(this.ordersDb)
+    if (hashes.length === 0) return
 
+    const db = await waitObservable(this.ordersDb)
     const tx = db.transaction('orders', 'readwrite')
 
-    let cursor = await tx.store.openCursor()
+    const range = IDBKeyRange.bound([1, MinKey, MinKey, MinKey], [MaxKey, MaxKey, MaxKey, MaxKey])
+    let cursor = await tx.store.openCursor(range)
     while (cursor) {
       const val = { ...cursor.value }
       if (hashes.includes(val.hash)) {
         val.status = status
-        console.log("update", val.hash)
         cursor.update(val)
       }
       cursor = await cursor.continue()
     }
 
+    await tx.done
+
     // await tx.done
     this.lastUpdatedOrders.set(Date.now())
   }
 
-  getOrders = async (): Promise<Order[]> => {
+  getOrderForItem = async (
+    collection: string,
+    id: ethers.BigNumberish
+  ): Promise<Order | undefined> => {
     const db = await waitObservable(this.ordersDb)
-    const orders = await db.getAllFromIndex('orders', 'askAmountOrIdNumber')
-    return fromDbOrders(orders)
+    const res = await db.getFromIndex('orders', CompoundIndexSellToken, [0, collection, ethers.BigNumber.from(id).toString()])
+    return res ? fromDbOrders([res])[0] : undefined
+  }
+
+  getSortedOrders = async (sortFilter: SortFilter, page?: Page, collection?: string): Promise<{orders: Order[], total: number}> => {
+    const sortType = sortFilter === 'recent-listing' ? 'expiration' : 'price'
+    const inverse = sortFilter === 'recent-listing' ? true : sortFilter === 'high-low-price' ? true : false
+
+    const start = page?.start ?? 0
+    const end = page?.end ?? 9
+    const count = end - start
+
+    return this.getOrders({ collection, sort: sortType, status: 'open', inverse, count, skip: start })
+  }
+
+  getOrders = async (props: {
+    sort?: 'expiration' | 'price',
+    collection?: string,
+    status: 'open' | 'canceled' | 'executed',
+    count?: number,
+    skip?: number,
+    from?: ethers.BigNumberish,
+    inverse?: boolean
+  }): Promise<{ orders: Order[], total: number }> => {
+    const { sort, collection, status, from, inverse, count, skip } = props
+    const db = await waitObservable(this.ordersDb)
+
+    const rp1 = status === 'open' ? [0, 1] : status === 'canceled' ? [1, 2] : [2, 3]
+    const rp2 = collection ? [collection, collection] : [MinKey, MaxKey]
+
+    const range = IDBKeyRange.bound(
+      [rp1[0], rp2[0], from && inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MinKey],
+      [rp1[1], rp2[1], from && !inverse ? parseFloat(ethers.BigNumber.from(from).toString()) : MaxKey]
+    )
+
+    const tx = db.transaction('orders', 'readonly')
+    const index = sort === 'expiration' ? CompoundIndexExpiration : CompoundIndexAmount
+
+    const res: DbOrder[] = []
+    let cursor = await tx.store.index(index).openCursor(range, inverse ? 'prev' : 'next')
+
+    // TODO: There are better ways to skip values
+    // so... find a way to optimize this
+    if (skip && skip > 0) {
+      for (let i = 0; cursor && i < skip; i++) {
+        cursor = await cursor.continue()
+      }
+    }
+
+    let badResults = 0
+    for (let i = 0; cursor && (!count || i < count); i++) {
+      if (
+        // Duplicated orders are ignored
+        (res.find((c) => c.sellAmountOrId === cursor?.value.sellAmountOrId && c.sellToken === cursor.value.sellToken) !== undefined) ||
+        // Orders for the wrong collection are ignored too
+        (collection && cursor.value.sellToken !== collection)
+      ) {
+        i--
+        badResults++
+      } else {
+        res.push({ ...cursor.value })
+      }
+
+      cursor = await cursor.continue()
+    }
+
+    return {
+      orders: fromDbOrders(res),
+      total: (await tx.store.index(index).count(range)) - badResults
+    }
   }
 }
