@@ -23,7 +23,7 @@ export type WakuCallback<T> = {
   it should remain on their lib, but it has a bug.
   I copy-pasted it here until it can be fixed upstream, we are ddosing Waku and this will help relieve it.
 */
-const DefaultWantedNumber = 2
+const DefaultWantedNumber = 1
 async function getBootstrapNodes(path = ['fleets', 'wakuv2.prod', 'waku-websocket'], url = 'https://fleets.status.im/', wantedNumber = DefaultWantedNumber) {
     if (wantedNumber <= 0) {
         return []
