@@ -27,6 +27,12 @@ export function CancelButton(props: { order?: Order, variant: 'text' | 'outlined
     const signer = web3Store.injected.get()?.getSigner()
     if (signer === undefined) return console.warn("signer not found")
 
+    const isRightChain = web3Store.rightChain.get()
+    if (!isRightChain) {
+      notificationsStore.notify({ severity: 'error', content: 'Invalid network' })
+      return
+    }
+
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
     contract.cancel(order.hash).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)

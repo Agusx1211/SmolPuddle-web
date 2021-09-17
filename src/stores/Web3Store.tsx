@@ -63,7 +63,7 @@ export class Web3Store {
     this.account = this.accounts.select((a) => a ? a[0] : undefined)
 
     this.provider = this.injected.select((injected) => this.rightChain.select((isValid) => {
-      return injected && isValid ? injected : this.static
+      return (injected && isValid) ? injected : this.static
     }))  
   }
 

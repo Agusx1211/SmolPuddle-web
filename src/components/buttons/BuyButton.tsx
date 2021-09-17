@@ -40,6 +40,12 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
       return
     }
 
+    const isRightChain = web3Store.rightChain.get()
+    if (!isRightChain) {
+      notificationsStore.notify({ severity: 'error', content: 'Invalid network' })
+      return
+    }
+
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
 
     contract.swap(orderAbiEncode(order), ethers.utils.arrayify(order.signature), { value: ethers.BigNumber.from(order.ask.amountOrId) }).then((tx: ethers.providers.TransactionResponse) => {
