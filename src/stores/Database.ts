@@ -206,19 +206,24 @@ export class Database {
     const res: DbOrder[] = []
     let cursor = await tx.store.index(index).openCursor(range, inverse ? 'prev' : 'next')
 
+    // HOTFIX: Disable pagination
+    // it seems to be broken, so we load the whole db and sort / slice in memory
+    // this is not efficient but it will work until we make the db work correctly
+
     // TODO: There are better ways to skip values
     // so... find a way to optimize this
-    if (skip && skip > 0) {
-      for (let i = 0; cursor && i < skip; i++) {
-        cursor = await cursor.continue()
-      }
-    }
+    // if (skip && skip > 0) {
+    //   for (let i = 0; cursor && i < skip; i++) {
+    //     cursor = await cursor.continue()
+    //   }
+    // }
 
     let badResults = 0
-    for (let i = 0; cursor && (!count || i < count); i++) {
+    for (let i = 0; cursor; i++) {
+      const val = { ...cursor.value }
       if (
         // Duplicated orders are ignored
-        (res.find((c) => c.sellAmountOrId === cursor?.value.sellAmountOrId && c.sellToken === cursor.value.sellToken) !== undefined) ||
+        (res.find((c) => c.sellAmountOrId === val.sellAmountOrId && c.sellToken === val.sellToken) !== undefined) ||
         // Orders for the wrong collection are ignored too
         (collection && cursor.value.sellToken !== collection)
       ) {
@@ -231,8 +236,24 @@ export class Database {
       cursor = await cursor.continue()
     }
 
+    let sorted: DbOrder[]
+
+    if (sort === 'expiration') {
+      if (inverse) {
+        sorted = res.sort((a, b) => b.expirationNumber - a.expirationNumber)
+      } else {
+        sorted = res.sort((a, b) => a.expirationNumber - b.expirationNumber)
+      }
+    } else {
+      if (inverse) {
+        sorted = res.sort((a, b) => b.askAmountOrIdNumber - a.askAmountOrIdNumber)
+      } else {
+        sorted = res.sort((a, b) => a.askAmountOrIdNumber - b.askAmountOrIdNumber)
+      }
+    }
+
     return {
-      orders: fromDbOrders(res),
+      orders: fromDbOrders((skip !== undefined && count !== undefined) ? sorted.slice(skip, skip + count) : sorted),
       total: (await tx.store.index(index).count(range)) - badResults
     }
   }
