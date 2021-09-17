@@ -1,6 +1,6 @@
-import { Button } from "@material-ui/core";
+import { Button, Tooltip } from "@material-ui/core";
 import { ethers } from "ethers";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SmolPuddleAbi } from "../../abi/SmolPuddle";
 import { SmolPuddleContract } from "../../constants";
 import { useObservable, useStore } from "../../stores";
@@ -9,6 +9,9 @@ import { Web3Store } from "../../stores/Web3Store";
 import { Order, orderAbiEncode } from "../../types/order";
 import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore';
 import { NftStore } from "../../stores/NftStore";
+import { safe } from "../../utils";
+
+const HARDCODED_CREATION = ethers.BigNumber.from("18446744073709551615")
 
 export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' | 'contained' | undefined }) {
   const { order, variant } = props
@@ -22,6 +25,12 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
 
   const account = useObservable(web3Store.account)
 
+  const listingDate = useMemo(() => {
+    if (!order) return undefined
+    const expiration = safe(() => ethers.BigNumber.from(order.expiration))
+    return expiration?.sub(HARDCODED_CREATION).toNumber()
+  }, [order])
+
   const buy = async () => {
     if (!order) return console.warn("no order found")
 
@@ -32,9 +41,6 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
     }
 
     const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(signer)
-
-    console.log("contract hash", await contract.hash(orderAbiEncode(order)))
-    console.log("og hash", order.hash)
 
     contract.swap(orderAbiEncode(order), ethers.utils.arrayify(order.signature), { value: ethers.BigNumber.from(order.ask.amountOrId) }).then((tx: ethers.providers.TransactionResponse) => {
       setPending(true)
@@ -49,8 +55,11 @@ export function BuyButton(props: { order?: Order, variant: 'text' | 'outlined' |
   }
 
   return <>
-  { (order && order.seller !== account) && <Button variant={variant} disabled={pending} disableElevation color="primary" onClick={buy}>
-    { pending ? 'Buying...' : 'Buy' } - {ethers.utils.formatEther(order.ask.amountOrId)} ETH
-  </Button> }
+  { (order && order.seller !== account) && <Tooltip title={`Order created at ${listingDate ? new Date(listingDate).toLocaleString() : 'Unknown'}`}>
+      <Button variant={variant} disabled={pending} disableElevation color="primary" onClick={buy}>
+        { pending ? 'Buying...' : 'Buy' } - {ethers.utils.formatEther(order.ask.amountOrId)} ETH
+      </Button>
+    </Tooltip>
+  }
   </>
 }
