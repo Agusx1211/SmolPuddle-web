@@ -160,13 +160,21 @@ export class Database {
     this.lastUpdatedOrders.set(Date.now())
   }
 
+  // TODO This should be to return multiple offers
+  // because multiple offers may exist for the same NFT
+  // then the frontend should either present all or pick one
+
+  // TODO x2 Also we need to tell the user if it has two orders for the same NFT
+  // because one is still going to be valid in case they re-buy the asset
   getOrderForItem = async (
     collection: string,
     id: ethers.BigNumberish
   ): Promise<Order | undefined> => {
     const db = await waitObservable(this.ordersDb)
-    const res = await db.getFromIndex('orders', CompoundIndexSellToken, [0, collection, ethers.BigNumber.from(id).toString()])
-    return res ? fromDbOrders([res])[0] : undefined
+    const res = await db.getAllFromIndex('orders', CompoundIndexSellToken, [0, collection, ethers.BigNumber.from(id).toString()])
+    if (!res || res.length === 0) return undefined
+    if (res.length === 1) return fromDbOrders(res)[0]
+    return fromDbOrders(res.sort((a, b) => a.askAmountOrIdNumber - b.askAmountOrIdNumber))[0]
   }
 
   getSortedOrders = async (sortFilter: SortFilter, page?: Page, collection?: string): Promise<{orders: Order[], total: number}> => {
@@ -212,14 +220,27 @@ export class Database {
 
     // TODO: There are better ways to skip values
     // so... find a way to optimize this
-    // if (skip && skip > 0) {
-    //   for (let i = 0; cursor && i < skip; i++) {
-    //     cursor = await cursor.continue()
-    //   }
-    // }
-
     let badResults = 0
-    for (let i = 0; cursor; i++) {
+
+    if (skip && skip > 0) {
+      for (let i = 0; cursor && i < skip; i++) {
+        const val = { ...cursor.value }
+
+        if (
+          // Duplicated orders are ignored
+          (res.find((c) => c.sellAmountOrId === val.sellAmountOrId && c.sellToken === val.sellToken) !== undefined) ||
+          // Orders for the wrong collection are ignored too
+          (collection && cursor.value.sellToken !== collection)
+        ) {
+          i--
+          badResults++
+        }
+
+        cursor = await cursor.continue()
+      }
+    }
+
+    for (let i = 0; cursor && (!count || i < count); i++) {
       const val = { ...cursor.value }
       if (
         // Duplicated orders are ignored
@@ -230,30 +251,32 @@ export class Database {
         i--
         badResults++
       } else {
-        res.push({ ...cursor.value })
+        res.push({ ...val })
       }
 
       cursor = await cursor.continue()
     }
 
-    let sorted: DbOrder[]
+    // let sorted: DbOrder[]
 
-    if (sort === 'expiration') {
-      if (inverse) {
-        sorted = res.sort((a, b) => b.expirationNumber - a.expirationNumber)
-      } else {
-        sorted = res.sort((a, b) => a.expirationNumber - b.expirationNumber)
-      }
-    } else {
-      if (inverse) {
-        sorted = res.sort((a, b) => b.askAmountOrIdNumber - a.askAmountOrIdNumber)
-      } else {
-        sorted = res.sort((a, b) => a.askAmountOrIdNumber - b.askAmountOrIdNumber)
-      }
-    }
+    // if (sort === 'expiration') {
+    //   if (inverse) {
+    //     sorted = res.sort((a, b) => b.expirationNumber - a.expirationNumber)
+    //   } else {
+    //     sorted = res.sort((a, b) => a.expirationNumber - b.expirationNumber)
+    //   }
+    // } else {
+    //   if (inverse) {
+    //     sorted = res.sort((a, b) => b.askAmountOrIdNumber - a.askAmountOrIdNumber)
+    //   } else {
+    //     sorted = res.sort((a, b) => a.askAmountOrIdNumber - b.askAmountOrIdNumber)
+    //   }
+    // }
+
+    // const sliced = (skip !== undefined && count !== undefined) ? sorted.slice(skip, skip + count) : sorted
 
     return {
-      orders: fromDbOrders((skip !== undefined && count !== undefined) ? sorted.slice(skip, skip + count) : sorted),
+      orders: fromDbOrders(res),
       total: (await tx.store.index(index).count(range)) - badResults
     }
   }

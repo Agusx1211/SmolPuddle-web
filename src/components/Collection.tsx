@@ -34,7 +34,7 @@ export function Collection(props: any) {
       setListingIds(orders.map((o) => o.sell.amountOrId))
       setListingsTotal(total)
     })
-  }, [lastUpdate, sortFilter, page, collection])
+  }, [lastUpdate, sortFilter, page, collection, databaseStore])
 
   const { total, ids } = useMemo(() => {
     const filteredKnown = knownItems.filter((i) => !listingIds.find((c) => c.eq(i)))
@@ -49,12 +49,12 @@ export function Collection(props: any) {
     const endKnown = startKnown + count - listingIds.length
 
     return { ids: [...listingIds, ...filteredKnown.slice(startKnown, endKnown)], total }
-  }, [knownItems, listingIds, listingsTotal])
+  }, [knownItems, listingIds, listingsTotal, page])
 
   useEffect(() => {
     // Set to lowest first by default
     searchStore.setSortingFilter("low-high-price")
-  }, [])
+  }, [searchStore])
 
   useEffect(() => {
     setLoading(true)
