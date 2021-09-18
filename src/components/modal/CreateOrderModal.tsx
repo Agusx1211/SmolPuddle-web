@@ -91,6 +91,12 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
         return console.error('invalid address', seller)
       }
 
+      const isRightChain = web3Store.rightChain.get()
+      if (!isRightChain) {
+        notificationsStore.notify({ severity: 'error', content: 'Invalid network' })
+        return
+      }
+
       if (!isApproved) {
         const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
         contract.setApprovalForAll(SmolPuddleContract, true).then((tx: ethers.providers.TransactionResponse) => {

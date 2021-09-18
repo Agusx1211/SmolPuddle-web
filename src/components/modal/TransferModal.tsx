@@ -62,6 +62,12 @@ export function CreateTransferModalContent(props: { collection: string, id: ethe
         return console.error('invalid address', sender)
       }
 
+      const isRightChain = web3Store.rightChain.get()
+      if (!isRightChain) {
+        notificationsStore.notify({ severity: 'error', content: 'Invalid network' })
+        return
+      }
+
       const contract = new ethers.Contract(collection, ERC721Abi).connect(injected.getSigner())
       contract.transferFrom(sender, recipient, id).then((tx: ethers.providers.TransactionResponse) => {
         setPending(true)
