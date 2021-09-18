@@ -53,6 +53,7 @@ export function Footer() {
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://github.com/Agusx1211/smolpuddle">Github contracts</Link>)}</Grid>
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://github.com/Agusx1211/smolpuddle-web">Github web</Link>)}</Grid>
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href={`${EXPLORER_ADDR}/address/${SmolPuddleContract}`}>Contract</Link>)}</Grid>
+      <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://forms.gle/A3ZtX7LS46Mghzsu5">Token listing</Link>)}</Grid>
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://discord.gg/Z4UFASn3Mq">Discord</Link>)}</Grid>
     </Grid>
     <br/>
