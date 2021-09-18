@@ -17,7 +17,8 @@ export const DefaultCollections = [
   "0x93C5a735df4e2Fa818A53a509734e1a02954BB78", // Metaverse Marauders 
   "0x3ff697d3972bc8493ef459ce2a2b8961756bb217", // Crypto Gems
   "0x8F4cBC81589Ba28B67C371EaB3d696Ad67B25c24", // Deevy
-  "0x7ce6e07107e5b972a2ccac6598ff8b06044ec6a3"  // ArbiMonkeys
+  "0x7ce6e07107e5b972a2ccac6598ff8b06044ec6a3", // ArbiMonkeys
+  "0xaf730246e5d2c32985f47425aeecc46f5b0a94a5"  // ArbiApes
 ]
 
 export const isDefaultCollection = (contractAddr: string) => {
