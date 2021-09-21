@@ -10,13 +10,12 @@ import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
 import { Database, OrderStatus } from "./Database"
 import { LocalStore } from "./LocalStore"
+import { ServerStore } from "./ServerStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 
 
 export const REBROADCAST_WINDOW = 3 * 60 * 60 * 1000
-// export const TmpApi = "http://143.198.178.42:80"
-export const TmpApi = "https://server.smolpuddle.io"
 
 export class OrderbookStore {
   // TODO: Keep old stores just in case we need to re-enable them
@@ -49,11 +48,12 @@ export class OrderbookStore {
       })
     })
 
-    fetch(`${TmpApi}/get`).then(async (response) => {
-      const orders = await response.json() as Order[]
-      console.log("saving", orders.length, "from api")
-      return this.saveOrders(orders)
-    })
+    // Sync with servers every 3 minutes
+    this.store.get(ServerStore).syncOrders()
+
+    setInterval(() => { 
+      this.store.get(ServerStore).syncOrders()
+    }, 3 * 60 * 1000)
 
     this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
       this.refreshStatus(...orders)
@@ -69,7 +69,10 @@ export class OrderbookStore {
   }
 
   addOrder = (order: Order, broadcast: boolean = false) => {
-    if (broadcast) this.store.get(WakuStore).sendMsg([order], isOrderArray)
+    if (broadcast) {
+      this.store.get(WakuStore).sendMsg([order], isOrderArray)
+      this.store.get(ServerStore).postOrders([order])
+    }
 
     this.store.get(CollectionsStore).saveCollection(order.sell.token)
     this.store.get(Database).storeOrders([order])
@@ -124,13 +127,7 @@ export class OrderbookStore {
     this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
       console.log("Broadcast orders", orders.length)
 
-      fetch(`${TmpApi}/post`, {
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-        body: JSON.stringify(orders)
-      }).catch((e) => {
-        console.warn("error calling api", e)
-      })
+      this.store.get(ServerStore).postOrders(orders)
 
       this.store.get(WakuStore).sendMsg(orders, isOrderArray).catch((e) => {
         console.warn("error sending to waku", e)

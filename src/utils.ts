@@ -64,3 +64,37 @@ export async function waitObservable<T>(o: Observable<T | undefined>): Promise<T
     })
   })
 }
+
+export function chunks<T>(input: Array<T>, maxSize: number): Array<Array<T>> {
+  const result: Array<Array<T>> = []
+
+  for (let i = 0, j = input.length; i < j; i += maxSize) {
+    result.push(input.slice(i, i + maxSize))
+  }
+
+  return result
+}
+
+export async function serially<T, K>(
+  values: Array<T>,
+  promise: (val: T) => Promise<K>,
+  onError?: (e: any, val: T) => boolean | void
+): Promise<Array<K | undefined>> {
+  const results: Array<K | undefined> = []
+
+  for (const v of values) {
+    try {
+      results.push(await promise(v))
+    } catch (e: any) {
+      if (onError) {
+        if (onError(e, v)) {
+          throw e
+        }
+      }
+
+      results.push(undefined)
+    }
+  }
+
+  return results
+}
