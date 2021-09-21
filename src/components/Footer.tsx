@@ -23,10 +23,9 @@ const useStyles = makeStyles((theme) => ({
 const authors = ([
   "Agusx1211",
   "PhABCD",
-  "Peterk",
   "_kevcas"
 ]).map((c) => ({ c: c, r: Math.random() })).sort((a, b) => a.r - b.r).map((c) => c.c)
-const spacedAuthors = [...authors.slice(0, 3), "", authors[3]]
+const spacedAuthors = [...authors.slice(0, 2), "", authors[2]]
 
 export function Footer() {
   const classes = useStyles()
@@ -55,6 +54,7 @@ export function Footer() {
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href={`${EXPLORER_ADDR}/address/${SmolPuddleContract}`}>Contract</Link>)}</Grid>
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://forms.gle/A3ZtX7LS46Mghzsu5">Token listing</Link>)}</Grid>
       <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://discord.gg/Z4UFASn3Mq">Discord</Link>)}</Grid>
+      <Grid item>{format(<Link color="inherit" target="_blank" rel="noopener noreferrer" href="https://twitter.com/smolpuddle_io">Twitter</Link>)}</Grid>
     </Grid>
     <br/>
   </footer>
