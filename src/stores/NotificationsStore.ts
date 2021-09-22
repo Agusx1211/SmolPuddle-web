@@ -2,8 +2,8 @@ import { Color } from "@material-ui/lab"
 import { ethers } from "ethers"
 import { observable } from "micro-observables"
 import { Store } from "."
+import { ARBITRUM_EXPLORER } from "../constants"
 import { parseError } from "../utils"
-import { ARBITRUM_EXPLORER } from "./Web3Store"
 
 export type Notification = {
   content: string,

@@ -1,7 +1,7 @@
 import WarningIcon from '@material-ui/icons/Warning'
 import { IconButton, Tooltip } from '@material-ui/core'
 import { isDefaultCollection } from '../../stores/CollectionsStore'
-import { ARBITRUM_EXPLORER } from '../../stores/Web3Store'
+import { ARBITRUM_EXPLORER } from '../../constants'
 
 
 export function Warning(props: { className?: string, collection: string }) {

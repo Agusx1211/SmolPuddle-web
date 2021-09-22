@@ -54,14 +54,14 @@ export function View() {
     database.getOrderForItem(collection, id).then((order) => {
       setListing(order)
     })
-  }, [collection, id, lastUpdate])
+  }, [collection, database, id, lastUpdate])
 
   useEffect(() => {
     nftStore.fetchItemInfo(collection, id)
     nftStore.fetchCollectionInfo(collection)
     nftStore.fetchOwnerInfo(collection, id)
     if (listing) orderbookStore.refreshStatus(listing)
-  }, [nftStore, collection, id, listing])
+  }, [nftStore, collection, id, listing, orderbookStore])
 
   const collectionName = metadata?.collection ? `${metadata?.collection?.name} (${metadata?.collection?.symbol})`: collection
 
