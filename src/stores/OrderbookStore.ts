@@ -47,8 +47,10 @@ export class OrderbookStore {
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
         if (orders.length > 0) {
-          this.workerWaku.processWakuOrders(orders).then(() => {
-            this.store.get(Database).notifyUpdate()
+          this.workerWaku.processWakuOrders(orders).then((added) => {
+            if (added !== 0) {
+              this.store.get(Database).notifyUpdate()
+            }
           })
         }
       })
@@ -62,8 +64,9 @@ export class OrderbookStore {
     }, 3 * 60 * 1000)
 
     this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
-      this.refreshStatus(...orders)
-      this.broadcast()
+      this.refreshStatus(...orders).then(() => {
+        this.broadcast()
+      })
     })
   }
 

@@ -5,7 +5,7 @@ import { STATIC_PROVIDER } from '../constants'
 import { Order } from '../types/order'
 
 type Waku = {
-  processWakuOrders: (orders: Order[]) => Promise<void>
+  processWakuOrders: (orders: Order[]) => Promise<number>
 }
 
 export type WakuWorker = Worker & Waku
@@ -24,8 +24,9 @@ const api: Waku = {
     const db = await pdb
     const filterOrders = await filterExistingOrders(db, ordersClean)
     const filtered = await filterStatus(STATIC_PROVIDER, filterOrders)
-    await storeOrders(db, filtered)
+    const res = await storeOrders(db, filtered)
     console.log(`[Waku worker] processed ${orders.length}, filtered ${filterOrders.length} got open ${filtered.open.length}`)
+    return res
   }
 }
 

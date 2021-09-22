@@ -108,15 +108,13 @@ export async function storeOrders(
     canceled?: Order[],
     badOwner?: Order[]
   }
-) {
+): Promise<number> {
   const dbOrders = { 
     open: orders.open ? toDbOrders(orders.open, OrderStatus.Open) : [],
     executed: orders.executed ? toDbOrders(orders.executed, OrderStatus.Closed) : [],
     canceled: orders.canceled ? toDbOrders(orders.canceled, OrderStatus.Canceled) : [],
     badOwned: orders.badOwner ? toDbOrders(orders.badOwner, OrderStatus.BadOwner) : []
   }
-
-  const tx = db.transaction('orders', 'readwrite')
 
   const allOrders = [
     ...dbOrders.open,
@@ -125,11 +123,17 @@ export async function storeOrders(
     ...dbOrders.badOwned,
   ]
 
+  if (allOrders.length === 0) return 0
+
+  const tx = db.transaction('orders', 'readwrite')
+
   const exists = await Promise.all(allOrders.map((o) => tx.store.getKey(o.hash)))
   const toSave = allOrders.filter((_, i) => exists[i] === undefined)
   await Promise.all(toSave.map((o) => tx.store.add(o)))
 
   await tx.done
+
+  return allOrders.length
 }
 
 export async function filterExistingOrders(db: IDBPDatabase<SmolDB>, orders: Order[]): Promise<Order[]> {

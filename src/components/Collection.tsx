@@ -29,6 +29,7 @@ export function Collection(props: any) {
   const [listingsTotal, setListingsTotal] = useState(0)
 
   useEffect(() => {
+    console.log("useEffect", lastUpdate, sortFilter, page, collection, databaseStore)
     databaseStore.getSortedOrders(sortFilter, page, collection).then(({ orders, total }) => {
       // TODO: Add known collections
       setListingIds(orders.map((o) => o.sell.amountOrId))
