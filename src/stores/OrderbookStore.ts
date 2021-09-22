@@ -8,12 +8,13 @@ import { SmolPuddleContract } from "../constants"
 import { isOrderArray, Order, orderHash } from "../types/order"
 import { safe } from "../utils"
 import { CollectionsStore } from "./CollectionsStore"
-import { Database, OrderStatus } from "./Database"
+import { Database } from "./Database"
 import { LocalStore } from "./LocalStore"
 import { ServerStore } from "./ServerStore"
 import { WakuStore } from "./WakuStore"
 import { Web3Store } from "./Web3Store"
 
+import { OrderStatus } from "../commons/db"
 
 export const REBROADCAST_WINDOW = 3 * 60 * 60 * 1000
 
