@@ -9,5 +9,5 @@ export const EXPLORER_ADDR = "https://arbiscan.io/"
 export const SmolPuddleContract = "0xa39eAd9429AB35bFA7aA85786bcddA500a78155D"
 export const STATIC_PROVIDER = new providers.MulticallProvider(
   new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC),
-  { batchSize: 100, timeWindow: 500, verbose: true }
+  { batchSize: 100, timeWindow: 500, verbose: false }
 )
