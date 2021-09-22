@@ -12,13 +12,7 @@ import { parseError, safe } from "../../utils"
 import { ERC721Abi } from "../../abi/ERC721"
 import { SmolPuddleContract } from "../../constants"
 import { buildTxNotif, NotificationsStore } from '../../stores/NotificationsStore'
-
-export function isSupportedOrder(order: Order): boolean {
-  return (
-    order.currency === Currency.SellNFT &&
-    order.ask.token === DefaultAskCurrency
-  )
-}
+import { DefaultAskCurrency } from "../../commons/orders"
 
 const useStyles = makeStyles((theme) => ({
   modal: {
@@ -44,7 +38,6 @@ const useStyles = makeStyles((theme) => ({
   }
 }))
 
-export const DefaultAskCurrency = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
 
 export function CreateOrderModalContent(props: { collection: string, id: ethers.BigNumberish }) {
   const { collection, id } = props
@@ -188,16 +181,6 @@ export function CreateOrderModalContent(props: { collection: string, id: ethers.
       </Button>
     </div>
   </div>
-}
-
-export function isValidSignature(order: Order) {
-  const sigV = order.signature.slice(130,132)
-  if (sigV != '1b' && sigV != '1c') {
-    return false
-  }
-
-  const signer = ethers.utils.verifyMessage(ethers.utils.arrayify(order.hash), order.signature.slice(0,132));
-  return signer === order.seller ? true : false
 }
 
 export function CreateOrderModal() {

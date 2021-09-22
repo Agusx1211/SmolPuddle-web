@@ -3,13 +3,10 @@ import { Observable } from "micro-observables"
 import Web3Modal from "web3modal"
 import { observable, Store } from "."
 import { Address, isAddress, parseAddress } from "../types/address"
-import { providers } from "@0xsequence/multicall"
 import WalletConnectProvider from "@walletconnect/web3-provider"
 import { NotificationsStore } from "./NotificationsStore"
-
-export const ARBITRUM_EXPLORER = "https://arbiscan.io/"
-export const ARBITRUM_DEFAULT_RPC = "https://arb1.arbitrum.io/rpc"
-export const ARBITRUM_CHAIN_ID = 42161
+import { providers } from "@0xsequence/multicall"
+import { ARBITRUM_CHAIN_ID, ARBITRUM_DEFAULT_RPC, ARBITRUM_EXPLORER, STATIC_PROVIDER } from "../constants"
 
 export class Web3Store {
   private modal: Web3Modal
@@ -19,7 +16,6 @@ export class Web3Store {
 
   public account: Observable<string | undefined>
   public provider: Observable<providers.MulticallProvider | ethers.providers.Web3Provider>
-  public static = new providers.MulticallProvider(new ethers.providers.JsonRpcProvider(ARBITRUM_DEFAULT_RPC))
 
   public chainId = observable<number | undefined>(undefined)
   public networkId = observable<number | undefined>(undefined)
@@ -63,7 +59,7 @@ export class Web3Store {
     this.account = this.accounts.select((a) => a ? a[0] : undefined)
 
     this.provider = this.injected.select((injected) => this.rightChain.select((isValid) => {
-      return (injected && isValid) ? injected : this.static
+      return (injected && isValid) ? injected : STATIC_PROVIDER
     }))  
   }
 

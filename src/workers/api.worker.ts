@@ -1,5 +1,7 @@
 import { expose } from 'comlink'
 import { openSmolDb, storeOrders } from '../commons/db'
+import { filterStatus } from '../commons/orders'
+import { STATIC_PROVIDER } from '../constants'
 import { Order } from '../types/order'
 import { chunks, serially } from '../utils'
 
@@ -30,8 +32,13 @@ const api: Api = {
     return serially(APIs, async (api) => {
       return fetch(api.get).then(async (response) => {
         const orders = await response.json() as Order[]
-        console.log("[ApiWorker] Got", orders.length, "from", api.get)
-        return storeOrders(db, orders)
+        console.log("[ApiWorker] Got raw ", orders.length, "from", api.get)
+
+        // TODO: Skip orders that already exist on the db
+        const { open } = await filterStatus(STATIC_PROVIDER, orders)
+        await storeOrders(db, open)
+
+        console.log("[ApiWorker] Got open ", open.length, "from", api.get)
       })
     }, (error, api) => {
       console.warn("[ApiWorker] error loading orders from", api.post.includes, error)

@@ -1,20 +1,17 @@
 
-import { ethers } from "ethers"
 import { Store } from "."
-import { ERC721Abi } from "../abi/ERC721"
-import { SmolPuddleAbi } from "../abi/SmolPuddle"
-import { isSupportedOrder, isValidSignature } from "../components/modal/CreateOrderModal"
-import { SmolPuddleContract } from "../constants"
-import { isOrderArray, Order, orderHash } from "../types/order"
-import { safe } from "../utils"
+import { isOrderArray, Order } from "../types/order"
 import { CollectionsStore } from "./CollectionsStore"
 import { Database } from "./Database"
 import { LocalStore } from "./LocalStore"
 import { ServerStore } from "./ServerStore"
 import { WakuStore } from "./WakuStore"
-import { Web3Store } from "./Web3Store"
 
 import { OrderStatus } from "../commons/db"
+import { filterStatus } from "../commons/orders"
+import { STATIC_PROVIDER } from "../constants"
+import Waku, { WakuWorker } from "../workers/waku.worker"
+import { Remote, wrap } from "comlink"
 
 export const REBROADCAST_WINDOW = 3 * 60 * 60 * 1000
 
@@ -40,12 +37,20 @@ export class OrderbookStore {
   // })
 
   private wakuKeepAlive = new LocalStore<number, number>("@smolpuddle.waku.keep.alive", 0)
+  private workerWaku: Remote<WakuWorker>
 
   constructor(private store: Store) {
+    const workerInstance = new Waku()
+    this.workerWaku = wrap<WakuWorker>(workerInstance)
+
     this.store.get(WakuStore).onEvent({
       isEvent: isOrderArray,
       callback: (async (orders: Order[]) => {
-        return this.saveOrders(orders)
+        if (orders.length > 0) {
+          this.workerWaku.processWakuOrders(orders).then(() => {
+            this.store.get(Database).notifyUpdate()
+          })
+        }
       })
     })
 
@@ -61,13 +66,6 @@ export class OrderbookStore {
       this.broadcast()
     })
   }
-  
-  saveOrders = async (orders: Order[]) => {
-    const cleanOrders = this.cleanOrders(orders) as Order[]
-    const { open } = await this.filterStatus(cleanOrders)
-
-    this.store.get(Database).storeOrders(open)
-  }
 
   addOrder = (order: Order, broadcast: boolean = false) => {
     if (broadcast) {
@@ -77,43 +75,6 @@ export class OrderbookStore {
 
     this.store.get(CollectionsStore).saveCollection(order.sell.token)
     this.store.get(Database).storeOrders([order])
-  }
-
-  cleanOrders = (orders: Order[]) : Order[] => {
-    return orders.map((order) => {
-      if (order) { 
-        // Add to list of known orders
-        // TODO: let's do some sanity checks first (to avoid flooding)
-        // ideas:
-        //        check if seller has token, sanity check amounts, check isApproved
-        //        put a limit of orders per-seller, check if seller has balance, etc
-        if (!order.hash || safe(() => orderHash(order)) !== order.hash) {
-          console.info('Drop order', order, 'invalid hash')
-          return undefined
-        }
-
-        if (!isSupportedOrder(order)) {
-          console.info('Drop unsuported order type', order)
-          return undefined
-        }
-
-        if (!isValidSignature(order)) {
-          // Check if sig version is wrong
-          const sigV = order.signature.slice(130,132)
-          if (sigV == '00' || sigV == '01') {
-            // Since some older order may have broken signatures
-            const newVersion = parseInt(sigV) + 27
-            order.signature = order.signature.slice(0,130) + newVersion.toString(16) + order.signature.slice(132,134)
-
-          } else {
-            console.info('Drop invalid signature', order)
-            return undefined
-          }
-        }
-      }
-
-      return order
-    }).filter((o) => o !== undefined) as Order[]
   }
 
   broadcast = async () => {
@@ -126,13 +87,15 @@ export class OrderbookStore {
     }
 
     this.store.get(Database).getOrders({ status: 'open' }).then(({ orders }) => {
-      console.log("Broadcast orders", orders.length)
+      if (orders.length > 0) {
+        console.log("Broadcast orders", orders.length)
 
-      this.store.get(ServerStore).postOrders(orders)
+        this.store.get(ServerStore).postOrders(orders)
 
-      this.store.get(WakuStore).sendMsg(orders, isOrderArray).catch((e) => {
-        console.warn("error sending to waku", e)
-      })
+        this.store.get(WakuStore).sendMsg(orders, isOrderArray).catch((e) => {
+          console.warn("error sending to waku", e)
+        })
+      }
     }).catch((e) => {
       console.error("Error on broadcast", e)
     })
@@ -140,32 +103,8 @@ export class OrderbookStore {
     this.wakuKeepAlive.set(now)
   }
 
-  filterStatus = async (orders: Order[]): Promise<{ open: Order[], executed: Order[], canceled: Order[], badOwner: Order[] }> => {
-    // TODO: We should check more things
-    // like NFT ownership and approvalForAll status
-    const provider = this.store.get(Web3Store).static
-    const contract = new ethers.Contract(SmolPuddleContract, SmolPuddleAbi).connect(provider)
-    const statuses = await Promise.all(orders.map((o) => safe(() => contract.status(o.seller, o.hash))))
-
-    const open = orders.filter((_, i) => statuses[i] && statuses[i].eq(0))
-    const executed = orders.filter((_, i) => statuses[i] && statuses[i].eq(1))
-    const canceled = orders.filter((_, i) => statuses[i] && statuses[i].eq(2))
-
-    // Only filter by correct owners on open orders
-    const owners = await Promise.all(open.map(async (o) => {
-      const contract = new ethers.Contract(o.sell.token, ERC721Abi).connect(provider)
-      try {
-        return await contract.ownerOf(o.sell.amountOrId)
-      } catch (e) { console.warn(e)}
-    }))
-
-    const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
-
-    return { open, executed, canceled, badOwner }
-  }
-
   refreshStatus = async (...orders: Order[]) => {
-    const { executed, canceled, badOwner } = await this.filterStatus(orders)
+    const { executed, canceled, badOwner } = await filterStatus(STATIC_PROVIDER, orders)
 
     const db = this.store.get(Database)
     await db.setStatus(executed.map((e) => e.hash), OrderStatus.Closed)
