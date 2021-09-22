@@ -21,7 +21,7 @@ export class Database {
 
   storeOrders = async (orders: Order[]) => {
     const db = await waitObservable(this.ordersDb)
-    storeOrders(db, orders)
+    storeOrders(db, { open: orders })
     this.notifyUpdate()
   }
 
@@ -90,6 +90,8 @@ export class Database {
     from?: ethers.BigNumberish,
     inverse?: boolean
   }): Promise<{ orders: Order[], total: number }> => {
+    const started = new Date().getTime()
+
     const { sort, collection, status, from, inverse, count, skip } = props
     const db = await waitObservable(this.ordersDb)
 
@@ -167,6 +169,8 @@ export class Database {
     // }
 
     // const sliced = (skip !== undefined && count !== undefined) ? sorted.slice(skip, skip + count) : sorted
+
+    console.log(`[Database] Query database result ${new Date().getTime() - started}ms`)
 
     return {
       orders: fromDbOrders(res),

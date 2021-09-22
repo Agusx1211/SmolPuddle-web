@@ -191,7 +191,7 @@ export class WakuStore {
     }
 
     const callback = async (msg: WakuMessage) => {
-      console.log("got message from callback")
+      console.log("[Waku] got message from callback")
       this.messages.push(msg)
       this.callCallbacks(this.callbacks, msg)
     }
@@ -201,7 +201,7 @@ export class WakuStore {
     try {
       await waku.store.queryHistory([topic],{
         callback: (msgs: WakuMessage[]) => {
-          console.log("got message from history", msgs.length)
+          console.log("[Waku] got messages from history", msgs.length)
           this.messages.push(...msgs)
           this.callCallbacks(this.callbacks, ...msgs)
         }

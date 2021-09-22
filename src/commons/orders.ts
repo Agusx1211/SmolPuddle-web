@@ -51,8 +51,9 @@ export async function filterStatus(
   }))
 
   const badOwner = open.filter((o, i) => owners[i] !== undefined && owners[i] !== o.seller)
+  const finalOpen = open.filter((o) => badOwner.find((c) => c.hash === o.hash) === undefined)
 
-  return { open, executed, canceled, badOwner }
+  return { open: finalOpen, executed, canceled, badOwner }
 }
 
 

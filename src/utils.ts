@@ -77,14 +77,16 @@ export function chunks<T>(input: Array<T>, maxSize: number): Array<Array<T>> {
 
 export async function serially<T, K>(
   values: Array<T>,
-  promise: (val: T) => Promise<K>,
+  promise: (val: T, i: number) => Promise<K>,
   onError?: (e: any, val: T) => boolean | void
 ): Promise<Array<K | undefined>> {
   const results: Array<K | undefined> = []
 
+  let i = 0
+
   for (const v of values) {
     try {
-      results.push(await promise(v))
+      results.push(await promise(v, i++))
     } catch (e: any) {
       if (onError) {
         if (onError(e, v)) {

@@ -100,24 +100,43 @@ export function openSmolDb() {
   })
 }
 
-export async function storeOrders(db: IDBPDatabase<SmolDB>, orders: Order[]) {
-  const dbOrders = toDbOrders(orders, OrderStatus.Open)
-  const tx = db.transaction('orders', 'readwrite')
-
-  let writeList = dbOrders.map((o) => o.hash)
-  let cursor = await tx.store.openCursor()
-  while (cursor && cursor !== null) {
-    if (writeList.includes(cursor?.value?.hash)) {
-      const hash = cursor?.value?.hash
-      writeList = writeList.filter((o) => o !== hash)
-    }
-    cursor = await cursor.continue()
+export async function storeOrders(
+  db: IDBPDatabase<SmolDB>,
+  orders: {
+    open?: Order[],
+    executed?: Order[],
+    canceled?: Order[],
+    badOwner?: Order[]
+  }
+) {
+  const dbOrders = { 
+    open: orders.open ? toDbOrders(orders.open, OrderStatus.Open) : [],
+    executed: orders.executed ? toDbOrders(orders.executed, OrderStatus.Closed) : [],
+    canceled: orders.canceled ? toDbOrders(orders.canceled, OrderStatus.Canceled) : [],
+    badOwned: orders.badOwner ? toDbOrders(orders.badOwner, OrderStatus.BadOwner) : []
   }
 
-  const writeObs = writeList.map((s) => dbOrders.find((o) => o.hash === s))
-  await Promise.all(writeObs.map((dbo) => {
-    return dbo ? tx.store.add(dbo) : undefined
-  }))
+  const tx = db.transaction('orders', 'readwrite')
+
+  const allOrders = [
+    ...dbOrders.open,
+    ...dbOrders.executed,
+    ...dbOrders.canceled,
+    ...dbOrders.badOwned,
+  ]
+
+  const exists = await Promise.all(allOrders.map((o) => tx.store.getKey(o.hash)))
+  const toSave = allOrders.filter((_, i) => exists[i] === undefined)
+  await Promise.all(toSave.map((o) => tx.store.add(o)))
 
   await tx.done
+}
+
+export async function filterExistingOrders(db: IDBPDatabase<SmolDB>, orders: Order[]): Promise<Order[]> {
+  const tx = db.transaction('orders', 'readonly')
+
+  const exists = await Promise.all(orders.map((o) => tx.store.getKey(o.hash)))
+  await tx.done
+
+  return orders.filter((_, i) => exists[i] === undefined)
 }

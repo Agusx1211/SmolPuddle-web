@@ -1,6 +1,6 @@
 import { expose } from 'comlink'
-import { openSmolDb, storeOrders } from '../commons/db'
-import { filterStatus } from '../commons/orders'
+import { filterExistingOrders, openSmolDb, storeOrders } from '../commons/db'
+import { cleanOrders, filterStatus } from '../commons/orders'
 import { STATIC_PROVIDER } from '../constants'
 import { Order } from '../types/order'
 import { chunks, serially } from '../utils'
@@ -31,17 +31,20 @@ const api: Api = {
 
     return serially(APIs, async (api) => {
       return fetch(api.get).then(async (response) => {
-        const orders = await response.json() as Order[]
-        console.log("[ApiWorker] Got raw ", orders.length, "from", api.get)
-
-        // TODO: Skip orders that already exist on the db
-        const { open } = await filterStatus(STATIC_PROVIDER, orders)
-        await storeOrders(db, open)
-
-        console.log("[ApiWorker] Got open ", open.length, "from", api.get)
+        serially(chunks(await response.json() as Order[], 256), async (chunk, i) => {
+          console.log(`[ApiWorker] Got raw ${i}-${chunk.length}, from ${api.get}`)
+          const ordersClean = cleanOrders(chunk)
+          const filterOrders = await filterExistingOrders(db, ordersClean)
+          const filtered = await filterStatus(STATIC_PROVIDER, filterOrders)
+          await storeOrders(db, filtered)
+          console.log(`[ApiWorker] Got open ${i}-${filtered.open.length}, filtered ${filterOrders.length}, from ${api.get}`)
+        }, (e) => {
+          console.warn("error processing chunk", e)
+        })
       })
     }, (error, api) => {
-      console.warn("[ApiWorker] error loading orders from", api.post.includes, error)
+      console.warn("[ApiWorker] error loading orders from", api.post, error.toString())
+      console.error(error)
     })
   },
   syncToAPIs: async(input: Order[]) => {

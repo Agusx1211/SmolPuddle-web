@@ -1,5 +1,5 @@
 import { expose } from 'comlink'
-import { openSmolDb, storeOrders } from '../commons/db'
+import { filterExistingOrders, openSmolDb, storeOrders } from '../commons/db'
 import { cleanOrders, filterStatus } from '../commons/orders'
 import { STATIC_PROVIDER } from '../constants'
 import { Order } from '../types/order'
@@ -21,10 +21,11 @@ const api: Waku = {
   // this is a stopgap solution because we need to move this logic off main thread asap
   processWakuOrders: async (orders: Order[]) => {
     const ordersClean = cleanOrders(orders)
-    const { open } = await filterStatus(STATIC_PROVIDER, ordersClean)
     const db = await pdb
-    await storeOrders(db, open)
-    console.log(`[Waku worker] processed ${orders.length} got open ${open.length}`)
+    const filterOrders = await filterExistingOrders(db, ordersClean)
+    const filtered = await filterStatus(STATIC_PROVIDER, filterOrders)
+    await storeOrders(db, filtered)
+    console.log(`[Waku worker] processed ${orders.length}, filtered ${filterOrders.length} got open ${filtered.open.length}`)
   }
 }
 
