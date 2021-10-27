@@ -20,7 +20,9 @@ export const DefaultCollections = [
   "0x7ce6e07107e5b972a2ccac6598ff8b06044ec6a3", // ArbiMonkeys
   "0xaf730246e5d2c32985f47425aeecc46f5b0a94a5", // ArbiApes
   "0xc1fCf330b4B4C773fA7e6835f681E8F798E9eBff", // Arbibots
-  "0xc1aDEC85105aa525AD1ddf3cFA7be507AED313Bb"  // Arbi Degen Apes
+  "0xc1aDEC85105aa525AD1ddf3cFA7be507AED313Bb", // Arbi Degen Apes
+  "0xfb8064d54cce639ca02546797fe350f4d883ecb8", // KaijuKingz
+  "0x1aaEC0Fa487A979A3F6B46DCCf0aC2648167a61E"  // CryptoGenerals
 ]
 
 export const isDefaultCollection = (contractAddr: string) => {
